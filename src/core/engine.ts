@@ -9,7 +9,7 @@ import {
   requireDraftCard,
   workOnCard,
 } from './board.ts';
-import { aiTick } from './automation.ts';
+import { aiTick, autoAssign, autoComplete, autoSubmit } from './automation.ts';
 import { canBuyUpgrade, purchaseUpgrade } from './economy.ts';
 import type { GameEvent } from './events.ts';
 import { resolveReview } from './review.ts';
@@ -135,10 +135,14 @@ function fireTimer(draft: Draft<GameState>, timer: TimerId, events: GameEvent[])
     case 'aiDeveloper':
       aiTick(draft, events);
       return;
-    // TODO(stage 7): move automations.
     case 'autoAssign':
+      autoAssign(draft, events);
+      return;
     case 'autoSubmit':
+      autoSubmit(draft, events);
+      return;
     case 'autoComplete':
+      autoComplete(draft, events);
       return;
   }
 }

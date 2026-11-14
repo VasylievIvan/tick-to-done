@@ -33,3 +33,28 @@ describe('automation panel', () => {
     expect(ring).toHaveAttribute('aria-valuenow', '0');
   });
 });
+
+describe('move automation timers', () => {
+  it('show one ring per bought automation in pipeline order, each running on its own', () => {
+    const state = boardWith({ todo: [{ complexity: 20 }], inProgress: [{ complexity: 10, implementationDone: 10 }] }, (draft) => {
+      draft.upgrades.owned.autoAssign = true;
+      draft.upgrades.owned.autoSubmit = true;
+      draft.upgrades.owned.autoComplete = true;
+    });
+    const { store } = renderGame(state, <AutomationPanel />);
+    const panel = screen.getByRole('region', { name: 'Automation' });
+    expect([...panel.querySelectorAll('li')].map((li) => li.getAttribute('data-automation'))).toEqual([
+      'autoAssign',
+      'autoSubmit',
+      'autoComplete',
+    ]);
+    act(() => {
+      store.getState().advance(500_000);
+    });
+    const ring = (name: string) => within(panel).getByRole('progressbar', { name: `${name} timer` });
+    expect(ring('Auto Assign')).toHaveAttribute('aria-valuenow', '50');
+    expect(ring('Auto Submit')).toHaveAttribute('aria-valuenow', '50');
+    expect(ring('Auto Complete')).toHaveAttribute('aria-valuenow', '0');
+    expect(within(panel).getAllByText('Idle')).toHaveLength(1);
+  });
+});

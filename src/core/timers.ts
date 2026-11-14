@@ -1,5 +1,6 @@
 import type { Draft } from 'immer';
 import { balance } from '../config/balance.ts';
+import { canAutoAssign, canAutoComplete, canAutoSubmit } from './automation.ts';
 import { unfinishedInProgressCount } from './counts.ts';
 import { aiTickIntervalUsAt } from './economy.ts';
 import { canSpawnRegularTask } from './spawner.ts';
@@ -25,11 +26,12 @@ export function timerHasWork(state: GameState, timer: TimerId): boolean {
   switch (timer) {
     case 'aiDeveloper':
       return state.upgrades.owned.aiDeveloper && unfinishedInProgressCount(state) > 0;
-    // TODO(stage 7): move automations.
     case 'autoAssign':
+      return canAutoAssign(state);
     case 'autoSubmit':
+      return canAutoSubmit(state);
     case 'autoComplete':
-      return false;
+      return canAutoComplete(state);
     case 'spawner':
       return canSpawnRegularTask(state);
   }

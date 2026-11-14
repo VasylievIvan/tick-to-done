@@ -24,8 +24,7 @@ export function showcaseState(): GameState {
     draft.nextCardNumber = 18;
     draft.economy = { credits: 1234, completedTasks: 17, returnedReviews: 3, totalEarned: 1500 };
     for (const id of upgradeIds) draft.upgrades.discovered[id] = true;
-    draft.upgrades.owned.aiDeveloper = true;
-    draft.upgrades.owned.autoAssign = true;
+    draft.upgrades.owned = { aiDeveloper: true, autoAssign: true, autoSubmit: true, autoComplete: true };
     draft.upgrades.levels.betterKeyboard = 2;
     draft.upgrades.levels.aiTickSpeed = 7;
     draft.scenario = {
