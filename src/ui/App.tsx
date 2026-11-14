@@ -1,7 +1,10 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { GameSession } from '../app/session.ts';
+import { GameStoreProvider } from './GameContext.tsx';
+import { GameScreen } from './GameScreen.tsx';
 
-export function App() {
+export function App({ session }: { session: GameSession }) {
   const { t } = useTranslation();
   const title = t('app.title');
 
@@ -9,5 +12,11 @@ export function App() {
     document.title = title;
   }, [title]);
 
-  return <h1>{title}</h1>;
+  useEffect(() => session.start(), [session]);
+
+  return (
+    <GameStoreProvider store={session.store}>
+      <GameScreen />
+    </GameStoreProvider>
+  );
 }

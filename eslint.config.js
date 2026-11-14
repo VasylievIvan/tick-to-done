@@ -28,6 +28,7 @@ const browserAndClockGlobals = [
 
 const userFacingAttributes = '/^(title|alt|placeholder|label|aria-label|aria-description|aria-roledescription|aria-valuetext)$/';
 const dictionaryMessage = 'Visible text must come from the i18n dictionary by key.';
+const markupChild = ':matches(JSXElement, JSXFragment) > JSXExpressionContainer';
 
 export default defineConfig([
   globalIgnores(['dist', 'coverage', 'playwright-report', 'test-results']),
@@ -56,8 +57,9 @@ export default defineConfig([
       'no-restricted-syntax': [
         'error',
         { selector: 'JSXText[value=/\\S/]', message: dictionaryMessage },
-        { selector: 'JSXExpressionContainer > Literal[value=/\\S/]', message: dictionaryMessage },
-        { selector: 'JSXExpressionContainer > TemplateLiteral', message: dictionaryMessage },
+        { selector: `${markupChild} > Literal[value=/\\S/]`, message: dictionaryMessage },
+        { selector: `${markupChild} > TemplateLiteral`, message: dictionaryMessage },
+        { selector: `${markupChild} > :matches(ConditionalExpression, LogicalExpression) > Literal[value=/\\S/]`, message: dictionaryMessage },
         { selector: `JSXAttribute[name.name=${userFacingAttributes}] > Literal`, message: dictionaryMessage },
         {
           selector: `JSXAttribute[name.name=${userFacingAttributes}] > JSXExpressionContainer > :matches(Literal, TemplateLiteral)`,
