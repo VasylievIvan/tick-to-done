@@ -2,7 +2,7 @@ import { balance, upgradeIds } from '../config/balance.ts';
 import { isImplementationComplete, isUnfinished } from './cards.ts';
 import { isAiTickSpeedMaxedAt, isRepeatableUpgrade, taskReward, upgradeCost } from './economy.ts';
 import type { GameEvent } from './events.ts';
-import { activeTasksCount } from './selectors.ts';
+import { activeTasksCount } from './counts.ts';
 import { columnIds, timerIds, type CardId, type GameState } from './state.ts';
 import { timerHasWork, timerIntervalUs } from './timers.ts';
 

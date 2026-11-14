@@ -1,6 +1,7 @@
 import type { Draft } from 'immer';
 import { balance } from '../config/balance.ts';
 import { aiTickIntervalUsAt } from './economy.ts';
+import { canSpawnRegularTask } from './spawner.ts';
 import { timerIds, type GameState, type TimerId } from './state.ts';
 
 export function timerIntervalUs(state: GameState, timer: TimerId): number {
@@ -19,9 +20,19 @@ export function timerIntervalUs(state: GameState, timer: TimerId): number {
 }
 
 /** The single rule deciding whether a timer runs: it runs exactly while it has work to do. */
-// TODO(stages 4, 6, 7): the generator, AI Developer and move automations get their work conditions in their stages.
-export function timerHasWork(_state: GameState, _timer: TimerId): boolean {
-  return false;
+export function timerHasWork(state: GameState, timer: TimerId): boolean {
+  switch (timer) {
+    // TODO(stage 6): AI Developer.
+    case 'aiDeveloper':
+      return false;
+    // TODO(stage 7): move automations.
+    case 'autoAssign':
+    case 'autoSubmit':
+    case 'autoComplete':
+      return false;
+    case 'spawner':
+      return canSpawnRegularTask(state);
+  }
 }
 
 /**

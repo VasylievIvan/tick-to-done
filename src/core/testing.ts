@@ -1,10 +1,13 @@
+import { produce, type Draft } from 'immer';
 import { expect } from 'vitest';
+import { balance } from '../config/balance.ts';
 import { columnOf } from './board.ts';
 import { applyCommand, advanceTime, type Command, type StepResult } from './engine.ts';
 import type { GameEvent } from './events.ts';
 import { findInvariantViolations, findTransitionViolations } from './invariants.ts';
 import { currentWorkRemaining } from './cards.ts';
-import { createInitialState, type Card, type CardId, type ColumnId, type GameState } from './state.ts';
+import { createCard, createInitialState, type Card, type CardId, type ColumnId, type GameState } from './state.ts';
+import { reconcileTimers } from './timers.ts';
 
 /** Test driver over the public engine: checks every invariant after every step and keeps the event history. */
 export class TestSession {
@@ -73,6 +76,30 @@ export class TestSession {
     return clicks;
   }
 
+  /** Takes a card from wherever it is to Done by hand, going through rework as often as the review returns it. */
+  completeByHand(id: CardId): void {
+    for (;;) {
+      if (this.columnOf(id) === 'todo') expect(this.move(id, 'inProgress')).toBe(true);
+      if (this.columnOf(id) === 'inProgress') {
+        this.workUntilFinished(id);
+        expect(this.move(id, 'review')).toBe(true);
+      }
+      const review = this.card(id).review;
+      if (review.status === 'running') this.advance(balance.review.durationUs - review.elapsedUs);
+      if (this.card(id).review.status === 'accepted') {
+        expect(this.move(id, 'done')).toBe(true);
+        return;
+      }
+    }
+  }
+
+  /** Plays the three scripted tasks by hand; returns at the moment the third one reaches Done. */
+  completeScriptedTasks(): this {
+    for (const id of balance.scenarioTasks.map((_, index) => index + 1)) this.completeByHand(id);
+    expect(this.state.scenario.spawnerEnabled).toBe(true);
+    return this;
+  }
+
   /** Advances in steps until the predicate holds; fails if it does not within the limit. */
   advanceUntil(predicate: (state: GameState) => boolean, stepUs = 10_000, limitUs = 600_000_000): void {
     let elapsed = 0;
@@ -82,4 +109,37 @@ export class TestSession {
       elapsed += stepUs;
     }
   }
+}
+
+export type CardSetup = Partial<Pick<Card, 'implementationDone' | 'reworkRequired' | 'reworkDone' | 'returnCount' | 'review'>> & {
+  complexity?: number;
+};
+
+/** Builds a board directly: cards are placed in the given columns in order, with sequential numbers from 1. */
+export function boardWith(
+  layout: Partial<Record<ColumnId, readonly CardSetup[]>>,
+  tweak?: (draft: Draft<GameState>) => void,
+): GameState {
+  return produce(createInitialState(1), (draft) => {
+    draft.cards = {};
+    draft.columns = { todo: [], inProgress: [], review: [], done: [] };
+    let number = 1;
+    for (const column of ['todo', 'inProgress', 'review', 'done'] as const) {
+      for (const setup of layout[column] ?? []) {
+        const card: Draft<Card> = createCard(number, setup.complexity ?? 10, null);
+        Object.assign(card, setup);
+        if (column === 'done') card.doneAtUs = 0;
+        draft.cards[number] = card;
+        draft.columns[column].push(number);
+        number += 1;
+      }
+    }
+    draft.nextCardNumber = number;
+    draft.scenario.revealed = { codeReview: true, done: true, balance: true, shop: true };
+    draft.scenario.scriptedTasksIssued = balance.scenarioTasks.length;
+    draft.scenario.spawnerEnabled = true;
+    draft.economy.completedTasks = Math.max(draft.columns.done.length, balance.scenarioTasks.length);
+    tweak?.(draft);
+    reconcileTimers(draft);
+  });
 }

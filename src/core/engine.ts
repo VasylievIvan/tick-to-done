@@ -12,7 +12,8 @@ import {
 import type { GameEvent } from './events.ts';
 import { resolveReview } from './review.ts';
 import { clickPower } from './selectors.ts';
-import { timerIds, type CardId, type ColumnId, type GameState } from './state.ts';
+import { spawnRegularTask } from './spawner.ts';
+import { timerIds, type CardId, type ColumnId, type GameState, type TimerId } from './state.ts';
 import { reconcileTimers, timerIntervalUs } from './timers.ts';
 
 export type Command =
@@ -105,15 +106,45 @@ function findDueReview(state: GameState): CardId | undefined {
   });
 }
 
+const timerFiringOrder: readonly TimerId[] = ['autoComplete', 'autoSubmit', 'aiDeveloper', 'autoAssign', 'spawner'];
+
+function findDueTimer(state: GameState): TimerId | undefined {
+  return timerFiringOrder.find((id) => {
+    const timer = state.timers[id];
+    return timer.active && timer.elapsedUs >= timerIntervalUs(state, id);
+  });
+}
+
+function fireTimer(draft: Draft<GameState>, timer: TimerId, events: GameEvent[]): void {
+  draft.timers[timer].elapsedUs = 0;
+  switch (timer) {
+    case 'spawner':
+      spawnRegularTask(draft, events);
+      return;
+    // TODO(stages 6, 7): AI Developer and move automations.
+    case 'aiDeveloper':
+    case 'autoAssign':
+    case 'autoSubmit':
+    case 'autoComplete':
+      return;
+  }
+}
+
 /**
  * Firings due at the same instant run from the end of the pipeline to its start: Review results top to bottom,
- * then Auto Complete, Auto Submit, the AI tick, Auto Assign and the generator.
+ * then Auto Complete, Auto Submit, the AI tick, Auto Assign and the generator. Every firing is followed by the
+ * timer rule, so a firing can start or stop the timers after it.
  */
 function fireDue(draft: Draft<GameState>, events: GameEvent[]): void {
   for (;;) {
     const review = findDueReview(draft);
-    if (review === undefined) return;
-    resolveReview(draft, review, events);
+    if (review !== undefined) {
+      resolveReview(draft, review, events);
+    } else {
+      const timer = findDueTimer(draft);
+      if (timer === undefined) return;
+      fireTimer(draft, timer, events);
+    }
     reconcileTimers(draft);
   }
 }

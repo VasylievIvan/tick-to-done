@@ -1,44 +1,11 @@
-import { produce, type Draft } from 'immer';
 import { describe, expect, it } from 'vitest';
 import { balance } from '../config/balance.ts';
 import { advanceTime, applyCommand, type Command } from './engine.ts';
 import { findInvariantViolations } from './invariants.ts';
-import { createCard, createInitialState, type Card, type CardId, type ColumnId, type GameState } from './state.ts';
-import { TestSession } from './testing.ts';
+import { createInitialState, type CardId, type ColumnId, type GameState } from './state.ts';
+import { boardWith, TestSession, type CardSetup } from './testing.ts';
 
 const REVIEW_US = balance.review.durationUs;
-
-type CardSetup = Partial<Pick<Card, 'implementationDone' | 'reworkRequired' | 'reworkDone' | 'returnCount' | 'review'>> & {
-  complexity?: number;
-};
-
-/** Builds a board directly: cards are placed in the given columns in order, with sequential numbers from 1. */
-function boardWith(
-  layout: Partial<Record<ColumnId, readonly CardSetup[]>>,
-  tweak?: (draft: Draft<GameState>) => void,
-): GameState {
-  return produce(createInitialState(1), (draft) => {
-    draft.cards = {};
-    draft.columns = { todo: [], inProgress: [], review: [], done: [] };
-    let number = 1;
-    for (const column of ['todo', 'inProgress', 'review', 'done'] as const) {
-      for (const setup of layout[column] ?? []) {
-        const card: Draft<Card> = createCard(number, setup.complexity ?? 10, null);
-        Object.assign(card, setup);
-        if (column === 'done') card.doneAtUs = 0;
-        draft.cards[number] = card;
-        draft.columns[column].push(number);
-        number += 1;
-      }
-    }
-    draft.nextCardNumber = number;
-    draft.scenario.revealed = { codeReview: true, done: true, balance: true, shop: true };
-    draft.scenario.scriptedTasksIssued = balance.scenarioTasks.length;
-    draft.scenario.spawnerEnabled = true;
-    draft.economy.completedTasks = Math.max(draft.columns.done.length, balance.scenarioTasks.length);
-    tweak?.(draft);
-  });
-}
 
 const finished: CardSetup = { implementationDone: 10 };
 const accepted: CardSetup = { implementationDone: 10, review: { status: 'accepted' } };

@@ -1,11 +1,11 @@
 import { balance } from '../config/balance.ts';
-import { isUnfinished } from './cards.ts';
 import { aiTickIntervalUsAt, aiWorkPowerAt, clickPowerAt, parallelTasksAt } from './economy.ts';
 import type { Card, GameState, TimerId } from './state.ts';
 import { timerIntervalUs } from './timers.ts';
 
 export { canMoveCard, canReorderCard, canWork, columnOf } from './board.ts';
 export { currentWorkRemaining, isUnfinished } from './cards.ts';
+export { activeTasksCount, unfinishedInProgressCount } from './counts.ts';
 
 export function clickPower(state: GameState): number {
   return clickPowerAt(state.upgrades.levels.betterKeyboard);
@@ -21,18 +21,6 @@ export function parallelTasks(state: GameState): number {
 
 export function aiTickIntervalUs(state: GameState): number {
   return aiTickIntervalUsAt(state.upgrades.levels.aiTickSpeed);
-}
-
-/** Done does not count; finished work waiting for Review and accepted cards waiting for Done do. */
-export function activeTasksCount(state: GameState): number {
-  return state.columns.todo.length + state.columns.inProgress.length + state.columns.review.length;
-}
-
-export function unfinishedInProgressCount(state: GameState): number {
-  return state.columns.inProgress.filter((id) => {
-    const card = state.cards[id];
-    return card !== undefined && isUnfinished(card);
-  }).length;
 }
 
 export function reviewProgress(card: Card): number {
