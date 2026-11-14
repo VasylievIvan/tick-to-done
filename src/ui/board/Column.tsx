@@ -54,9 +54,9 @@ export function Column({ column, cards, dropState, insertionIndex }: ColumnProps
   const { setNodeRef } = useDroppable({ id: columnDroppableId(column), data });
   const name = t(`board.column.${column}`);
   const sortable = column !== 'done';
-  const items = cards.map((id) => (
+  const items = cards.map((id, index) => (
     <Fragment key={id}>
-      {insertionIndex === cards.indexOf(id) && <div className={styles.indicator} />}
+      {insertionIndex === index && <div className={styles.indicator} />}
       {sortable ? <SortableTaskCard id={id} column={column} /> : <StaticTaskCard id={id} column={column} />}
     </Fragment>
   ));

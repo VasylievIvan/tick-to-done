@@ -44,6 +44,21 @@ describe('upgrade prices', () => {
     expect(total).toBe(840);
   });
 
+  it('has exactly the eight upgrades of the v0.1 catalog', () => {
+    expect([...upgradeIds].sort()).toEqual(
+      [
+        'aiDeveloper',
+        'aiTickSpeed',
+        'aiWorkPower',
+        'autoAssign',
+        'autoComplete',
+        'autoSubmit',
+        'betterKeyboard',
+        'parallelProcessing',
+      ].sort(),
+    );
+  });
+
   it('starts every price at the base cost', () => {
     for (const id of upgradeIds) expect(upgradeCost(id, 0)).toBe(balance.upgrades[id].baseCost);
   });

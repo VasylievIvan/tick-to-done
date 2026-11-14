@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { MICROSECONDS_PER_SECOND, upgradeIds, type UpgradeId } from '../../config/balance.ts';
+import { MICROSECONDS_PER_SECOND, type UpgradeId } from '../../config/balance.ts';
 import {
   canBuyUpgrade,
   currentUpgradeCost,
@@ -9,7 +9,8 @@ import {
   upgradeLevel,
   visibleUpgrades,
 } from '../../core/selectors.ts';
-import { useDispatch, useGame } from '../GameContext.tsx';
+import { useDispatch, useGame, useGameList } from '../GameContext.tsx';
+import panel from '../Panel.module.css';
 import styles from './Shop.module.css';
 
 function useEffectText(id: UpgradeId, level: number, exhausted: boolean): string {
@@ -64,12 +65,11 @@ function ShopItem({ id }: { id: UpgradeId }) {
 
 export function Shop() {
   const { t } = useTranslation();
-  const visible = useGame((game) => visibleUpgrades(game).join(' '));
-  const ids = upgradeIds.filter((id) => visible.split(' ').includes(id));
+  const ids = useGameList(visibleUpgrades);
   return (
-    <section className={styles.panel} aria-label={t('shop.title')}>
-      <h2 className={styles.title}>{t('shop.title')}</h2>
-      <ul className={styles.list}>
+    <section className={panel.panel} aria-label={t('shop.title')}>
+      <h2 className={panel.title}>{t('shop.title')}</h2>
+      <ul className={panel.list}>
         {ids.map((id) => (
           <ShopItem key={id} id={id} />
         ))}

@@ -46,6 +46,7 @@ describe('game screen', () => {
     });
     expect(screen.getByTestId('credits')).toHaveTextContent('20 Credits');
     expect(screen.getByTestId('tasks-done')).toHaveTextContent('1 task done');
+    expect(screen.getByTestId('top-bar')).toHaveTextContent(/^20 Credits1 task done$/);
     expect(within(screen.getByRole('region', { name: 'To Do' })).getByText('Task 0002')).toBeInTheDocument();
   });
 });

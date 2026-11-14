@@ -11,11 +11,11 @@ function systemSeed(): number {
   return crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
 }
 
-function positiveNumberParam(params: URLSearchParams, name: string): number | null {
+function numberParam(params: URLSearchParams, name: string, isValid: (value: number) => boolean): number | null {
   const raw = params.get(name);
-  if (raw === null) return null;
+  if (raw === null || raw.trim() === '') return null;
   const value = Number(raw);
-  return Number.isFinite(value) && value > 0 ? value : null;
+  return isValid(value) ? value : null;
 }
 
 /**
@@ -26,8 +26,8 @@ export function resolveSessionOptions(search: string): SessionOptions {
   if (!import.meta.env.DEV) return { seed: systemSeed(), speed: 1 };
   const params = new URLSearchParams(search);
   return {
-    seed: positiveNumberParam(params, 'seed') ?? systemSeed(),
-    speed: positiveNumberParam(params, 'speed') ?? 1,
+    seed: numberParam(params, 'seed', (value) => Number.isSafeInteger(value) && value >= 0) ?? systemSeed(),
+    speed: numberParam(params, 'speed', (value) => Number.isFinite(value) && value > 0) ?? 1,
   };
 }
 

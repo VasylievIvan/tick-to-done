@@ -1,6 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
-const port = 5199;
+const devPort = 5199;
+const productionPort = 5299;
 
 export default defineConfig({
   testDir: './e2e',
@@ -9,15 +10,26 @@ export default defineConfig({
   retries: 0,
   reporter: [['list']],
   use: {
-    baseURL: `http://localhost:${port}`,
     channel: 'chrome',
     viewport: { width: 1440, height: 900 },
     trace: 'retain-on-failure',
   },
-  webServer: {
-    command: `npm run dev -- --port ${port} --strictPort`,
-    url: `http://localhost:${port}`,
-    reuseExistingServer: false,
-    timeout: 60_000,
-  },
+  projects: [
+    { name: 'dev', testIgnore: /production\.spec\.ts/, use: { baseURL: `http://localhost:${devPort}` } },
+    { name: 'production', testMatch: /production\.spec\.ts/, use: { baseURL: `http://localhost:${productionPort}` } },
+  ],
+  webServer: [
+    {
+      command: `npm run dev -- --port ${devPort} --strictPort`,
+      url: `http://localhost:${devPort}`,
+      reuseExistingServer: false,
+      timeout: 60_000,
+    },
+    {
+      command: `npm run build && npm run preview -- --port ${productionPort} --strictPort`,
+      url: `http://localhost:${productionPort}`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+  ],
 });

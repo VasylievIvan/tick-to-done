@@ -2,7 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { MICROSECONDS_PER_SECOND } from '../../config/balance.ts';
 import { aiTickIntervalUs, aiWorkPower, parallelTasks, timerProgress } from '../../core/selectors.ts';
 import type { TimerId } from '../../core/state.ts';
-import { useGame } from '../GameContext.tsx';
+import { useGame, useGameList } from '../GameContext.tsx';
+import panel from '../Panel.module.css';
 import styles from './Automation.module.css';
 import { TimerRing } from './TimerRing.tsx';
 
@@ -36,13 +37,12 @@ function AutomationRow({ id }: { id: AutomationId }) {
 
 export function AutomationPanel() {
   const { t } = useTranslation();
-  const owned = useGame((game) => automationOrder.filter((id) => game.upgrades.owned[id]).join(' '));
-  if (owned === '') return null;
-  const rows = automationOrder.filter((id) => owned.split(' ').includes(id));
+  const rows = useGameList((game) => automationOrder.filter((id) => game.upgrades.owned[id]));
+  if (rows.length === 0) return null;
   return (
-    <section className={styles.panel} aria-label={t('automation.title')}>
-      <h2 className={styles.title}>{t('automation.title')}</h2>
-      <ul className={styles.list}>
+    <section className={panel.panel} aria-label={t('automation.title')}>
+      <h2 className={panel.title}>{t('automation.title')}</h2>
+      <ul className={panel.list}>
         {rows.map((id) => (
           <AutomationRow key={id} id={id} />
         ))}

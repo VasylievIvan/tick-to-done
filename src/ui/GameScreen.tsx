@@ -1,6 +1,6 @@
 import { AutomationPanel } from './automation/AutomationPanel.tsx';
 import { Board } from './board/Board.tsx';
-import { useGame, useJournal } from './GameContext.tsx';
+import { useGame, useHasJournal } from './GameContext.tsx';
 import styles from './GameScreen.module.css';
 import { JournalPanel } from './journal/JournalPanel.tsx';
 import { Shop } from './shop/Shop.tsx';
@@ -9,11 +9,11 @@ import { StatsBar } from './stats/StatsBar.tsx';
 export function GameScreen() {
   const balanceRevealed = useGame((game) => game.scenario.revealed.balance);
   const shopRevealed = useGame((game) => game.scenario.revealed.shop);
-  const hasJournal = useJournal().length > 0;
+  const hasJournal = useHasJournal();
   return (
     <div className={styles.screen}>
       {balanceRevealed && (
-        <header className={styles.topBar}>
+        <header className={styles.topBar} data-testid="top-bar">
           <StatsBar />
         </header>
       )}

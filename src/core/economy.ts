@@ -3,7 +3,19 @@ import { balance, type Fraction, type RepeatableUpgradeId, type UpgradeId, upgra
 import type { EventSink, MoveActor } from './events.ts';
 import type { Card, GameState } from './state.ts';
 
+const scaledCache = new Map<string, number>();
+
+/** Prices and intervals are read every frame but change only on purchase, so exact results are cached by input. */
 function scaleByPower(value: number, ratio: Fraction, exponent: number, rounding: 'ceil' | 'floor'): number {
+  const key = `${value}:${ratio.numerator}/${ratio.denominator}:${exponent}:${rounding}`;
+  const cached = scaledCache.get(key);
+  if (cached !== undefined) return cached;
+  const result = exactScaleByPower(value, ratio, exponent, rounding);
+  scaledCache.set(key, result);
+  return result;
+}
+
+function exactScaleByPower(value: number, ratio: Fraction, exponent: number, rounding: 'ceil' | 'floor'): number {
   const numerator = BigInt(value) * BigInt(ratio.numerator) ** BigInt(exponent);
   const denominator = BigInt(ratio.denominator) ** BigInt(exponent);
   const quotient = rounding === 'ceil' ? (numerator + denominator - 1n) / denominator : numerator / denominator;

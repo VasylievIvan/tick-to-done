@@ -15,7 +15,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { columnOf } from '../../core/selectors.ts';
 import { columnIds, type ColumnId, type GameState } from '../../core/state.ts';
-import { useDispatch, useGame, useGameStore } from '../GameContext.tsx';
+import { useDispatch, useGame, useGameList, useGameStore } from '../GameContext.tsx';
 import { useTaskLabel } from '../useTaskLabel.ts';
 import styles from './Board.module.css';
 import { CardView } from './CardView.tsx';
@@ -74,8 +74,8 @@ export function Board() {
   const [drag, setDrag] = useState<DragState | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
-  const allowedColumns = useGame((game) =>
-    drag ? columnIds.filter((column) => isDropAllowed(game, drag.origin, column)).join(' ') : '',
+  const allowedColumns = useGameList((game) =>
+    drag ? columnIds.filter((column) => isDropAllowed(game, drag.origin, column)) : [],
   );
   const hoveredColumn = useGame((game) => (drag?.target ? targetColumn(game, drag.target) : null));
   const marker = useGame((game) => (drag?.target ? insertionIndex(game, drag.origin, drag.target) : null));
@@ -116,7 +116,7 @@ export function Board() {
   }
 
   function dropStateOf(column: ColumnId): ColumnDropState {
-    if (column === drag?.origin.column || !allowedColumns.split(' ').includes(column)) return 'idle';
+    if (column === drag?.origin.column || !allowedColumns.includes(column)) return 'idle';
     return hoveredColumn === column ? 'active' : 'allowed';
   }
 
