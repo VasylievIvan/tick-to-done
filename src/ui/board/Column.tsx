@@ -23,10 +23,12 @@ function SortableTaskCard({ id, column }: { id: CardId; column: ColumnId }) {
   const card = useGame((game) => game.cards[id]);
   const dispatch = useDispatch();
   const data: DropData = { kind: 'card', column };
-  const { setNodeRef, attributes, listeners, transform, isDragging } = useSortable({
+  const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({
     id,
     data,
-    transition: null,
+    // Neighbours slide aside only while the player drags (decision F3); moves made by the game itself and the
+    // settling after a drop stay instant, because animated card moves are deferred beyond v0.1.
+    animateLayoutChanges: () => false,
     attributes: { roleDescription: t('board.dnd.roleDescription') },
   });
   if (!card) return null;
@@ -34,7 +36,7 @@ function SortableTaskCard({ id, column }: { id: CardId; column: ColumnId }) {
     <div
       ref={setNodeRef}
       className={isDragging ? styles.placeholder : undefined}
-      style={{ transform: CSS.Translate.toString(transform) }}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
       {...attributes}
       {...listeners}
     >
