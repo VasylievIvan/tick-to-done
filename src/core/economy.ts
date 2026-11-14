@@ -1,10 +1,17 @@
-import { balance, type Fraction, type UpgradeId } from '../config/balance.ts';
+import type { Draft } from 'immer';
+import { balance, type Fraction, type RepeatableUpgradeId, type UpgradeId, upgradeIds } from '../config/balance.ts';
+import type { EventSink } from './events.ts';
+import type { Card, GameState } from './state.ts';
 
 function scaleByPower(value: number, ratio: Fraction, exponent: number, rounding: 'ceil' | 'floor'): number {
   const numerator = BigInt(value) * BigInt(ratio.numerator) ** BigInt(exponent);
   const denominator = BigInt(ratio.denominator) ** BigInt(exponent);
   const quotient = rounding === 'ceil' ? (numerator + denominator - 1n) / denominator : numerator / denominator;
   return Number(quotient);
+}
+
+export function isRepeatableUpgrade(id: UpgradeId): id is RepeatableUpgradeId {
+  return balance.upgrades[id].kind === 'repeatable';
 }
 
 export function taskReward(originalComplexity: number): number {
@@ -49,4 +56,23 @@ export function isAiTickSpeedMaxedAt(tickSpeedLevels: number): boolean {
 export function isDiscoveryThresholdReached(credits: number, baseCost: number): boolean {
   const { numerator, denominator } = balance.discoveryThreshold;
   return credits * denominator >= baseCost * numerator;
+}
+
+export function payReward(draft: Draft<GameState>, card: Card, events: EventSink): void {
+  const reward = taskReward(card.originalComplexity);
+  draft.economy.credits += reward;
+  draft.economy.completedTasks += 1;
+  draft.economy.totalEarned += reward;
+  events.push({ type: 'taskCompleted', card: card.number, reward });
+  recordDiscoveries(draft, events);
+}
+
+/** A reached threshold is remembered: later spending never hides an upgrade again. */
+export function recordDiscoveries(draft: Draft<GameState>, events: EventSink): void {
+  for (const id of upgradeIds) {
+    if (draft.upgrades.discovered[id]) continue;
+    if (!isDiscoveryThresholdReached(draft.economy.credits, balance.upgrades[id].baseCost)) continue;
+    draft.upgrades.discovered[id] = true;
+    events.push({ type: 'upgradeDiscovered', upgrade: id });
+  }
 }
