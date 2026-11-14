@@ -34,6 +34,49 @@ export const en = {
     approved: 'Approved',
     work: 'Work',
   },
+  shop: {
+    title: 'Shop',
+    price: '{{value, number}} Credits',
+    level: 'Level {{value, number}}',
+    buy: 'Buy',
+    purchased: 'Purchased',
+    maxed: 'Max',
+    upgrade: {
+      betterKeyboard: {
+        name: 'Better Keyboard',
+        effect: 'Work per click: {{current, number}} → {{next, number}}',
+      },
+      aiDeveloper: {
+        name: 'AI Developer',
+        effect: 'Works on the top tasks in In Progress by itself, tick by tick.',
+      },
+      autoAssign: {
+        name: 'Auto Assign',
+        effect: 'Takes the top task from To Do when AI has a free slot.',
+      },
+      autoSubmit: {
+        name: 'Auto Submit',
+        effect: 'Sends the top finished task to Code Review.',
+      },
+      autoComplete: {
+        name: 'Auto Complete',
+        effect: 'Moves the top approved task to Done.',
+      },
+      aiWorkPower: {
+        name: 'AI Work Power',
+        effect: 'AI work per tick: {{current, number}} → {{next, number}}',
+      },
+      aiTickSpeed: {
+        name: 'AI Tick Speed',
+        effect: 'AI tick: {{current, number(maximumFractionDigits: 3)}} s → {{next, number(maximumFractionDigits: 3)}} s',
+        effectMaxed: 'AI tick: {{current, number(maximumFractionDigits: 3)}} s',
+      },
+      parallelProcessing: {
+        name: 'Parallel Processing',
+        effect: 'Tasks AI works on at once: {{current, number}} → {{next, number}}',
+      },
+    },
+  },
   stats: {
     credits: '{{value, number}} Credits',
     tasksDone_one: '{{count, number}} task done',

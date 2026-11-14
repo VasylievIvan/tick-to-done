@@ -1,5 +1,5 @@
 import { produce } from 'immer';
-import { balance } from '../config/balance.ts';
+import { balance, upgradeIds } from '../config/balance.ts';
 import { createCard, createInitialState, type Card, type GameState } from '../core/state.ts';
 
 /** A board with every card state and every revealed element, for screen-wide rendering tests. */
@@ -23,6 +23,11 @@ export function showcaseState(): GameState {
     }
     draft.nextCardNumber = 18;
     draft.economy = { credits: 1234, completedTasks: 17, returnedReviews: 3, totalEarned: 1500 };
+    for (const id of upgradeIds) draft.upgrades.discovered[id] = true;
+    draft.upgrades.owned.aiDeveloper = true;
+    draft.upgrades.owned.autoAssign = true;
+    draft.upgrades.levels.betterKeyboard = 2;
+    draft.upgrades.levels.aiTickSpeed = 7;
     draft.scenario = {
       scriptedTasksIssued: balance.scenarioTasks.length,
       revealed: { codeReview: true, done: true, balance: true, shop: true },

@@ -76,3 +76,40 @@ export function recordDiscoveries(draft: Draft<GameState>, events: EventSink): v
     events.push({ type: 'upgradeDiscovered', upgrade: id });
   }
 }
+
+export function upgradeLevel(state: GameState, id: UpgradeId): number {
+  if (isRepeatableUpgrade(id)) return state.upgrades.levels[id];
+  return state.upgrades.owned[id] ? 1 : 0;
+}
+
+/** Visible: the shop is open, the 50% threshold was ever reached, and AI upgrades also need AI Developer. */
+export function isUpgradeVisible(state: GameState, id: UpgradeId): boolean {
+  if (!state.scenario.revealed.shop || !state.upgrades.discovered[id]) return false;
+  return !balance.upgrades[id].requiresAiDeveloper || state.upgrades.owned.aiDeveloper;
+}
+
+/** A bought one-time upgrade and AI Tick Speed at its minimum interval stay in the shop but cannot be bought. */
+export function isUpgradeExhausted(state: GameState, id: UpgradeId): boolean {
+  if (id === 'aiTickSpeed') return isAiTickSpeedMaxedAt(state.upgrades.levels.aiTickSpeed);
+  return !isRepeatableUpgrade(id) && state.upgrades.owned[id];
+}
+
+export function currentUpgradeCost(state: GameState, id: UpgradeId): number {
+  return upgradeCost(id, upgradeLevel(state, id));
+}
+
+export function canBuyUpgrade(state: GameState, id: UpgradeId): boolean {
+  return (
+    isUpgradeVisible(state, id) &&
+    !isUpgradeExhausted(state, id) &&
+    state.economy.credits >= currentUpgradeCost(state, id)
+  );
+}
+
+export function purchaseUpgrade(draft: Draft<GameState>, id: UpgradeId, events: EventSink): void {
+  const cost = currentUpgradeCost(draft, id);
+  draft.economy.credits -= cost;
+  if (isRepeatableUpgrade(id)) draft.upgrades.levels[id] += 1;
+  else draft.upgrades.owned[id] = true;
+  events.push({ type: 'upgradePurchased', upgrade: id, cost });
+}

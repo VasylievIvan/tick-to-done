@@ -1,5 +1,5 @@
 import { produce, type Draft } from 'immer';
-import { balance } from '../config/balance.ts';
+import { balance, type UpgradeId } from '../config/balance.ts';
 import {
   canMoveCard,
   canReorderCard,
@@ -9,6 +9,7 @@ import {
   requireDraftCard,
   workOnCard,
 } from './board.ts';
+import { canBuyUpgrade, purchaseUpgrade } from './economy.ts';
 import type { GameEvent } from './events.ts';
 import { resolveReview } from './review.ts';
 import { clickPower } from './selectors.ts';
@@ -26,7 +27,8 @@ export type Command =
       readonly index: number;
     }
   | { readonly type: 'reorderCard'; readonly card: CardId; readonly column: ColumnId; readonly index: number }
-  | { readonly type: 'work'; readonly card: CardId };
+  | { readonly type: 'work'; readonly card: CardId }
+  | { readonly type: 'buyUpgrade'; readonly upgrade: UpgradeId };
 
 export interface StepResult {
   readonly state: GameState;
@@ -46,6 +48,8 @@ export function isCommandAllowed(state: GameState, command: Command): boolean {
       return canReorderCard(state, command.card, command.column);
     case 'work':
       return canWork(state, command.card);
+    case 'buyUpgrade':
+      return canBuyUpgrade(state, command.upgrade);
   }
 }
 
@@ -59,6 +63,9 @@ function execute(draft: Draft<GameState>, command: Command, events: GameEvent[])
       return;
     case 'work':
       workOnCard(draft, requireDraftCard(draft, command.card), clickPower(draft), events);
+      return;
+    case 'buyUpgrade':
+      purchaseUpgrade(draft, command.upgrade, events);
       return;
   }
 }

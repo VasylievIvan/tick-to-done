@@ -6,7 +6,8 @@
 
 .column {
   display: flex;
-  flex: 0 0 var(--column-width);
+  flex: 0 1 var(--column-width);
+  min-width: 216px;
   flex-direction: column;
   min-height: calc(100vh - 120px);
   border-radius: 6px;

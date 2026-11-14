@@ -1,0 +1,79 @@
+import { useTranslation } from 'react-i18next';
+import { MICROSECONDS_PER_SECOND, upgradeIds, type UpgradeId } from '../../config/balance.ts';
+import {
+  canBuyUpgrade,
+  currentUpgradeCost,
+  isRepeatableUpgrade,
+  isUpgradeExhausted,
+  upgradeEffectAt,
+  upgradeLevel,
+  visibleUpgrades,
+} from '../../core/selectors.ts';
+import { useDispatch, useGame } from '../GameContext.tsx';
+import styles from './Shop.module.css';
+
+function useEffectText(id: UpgradeId, level: number, exhausted: boolean): string {
+  const { t } = useTranslation();
+  if (!isRepeatableUpgrade(id)) return t(`shop.upgrade.${id}.effect`);
+  const current = upgradeEffectAt(id, level);
+  const next = upgradeEffectAt(id, level + 1);
+  if (id === 'aiTickSpeed') {
+    const seconds = { current: current / MICROSECONDS_PER_SECOND, next: next / MICROSECONDS_PER_SECOND };
+    return exhausted ? t('shop.upgrade.aiTickSpeed.effectMaxed', seconds) : t('shop.upgrade.aiTickSpeed.effect', seconds);
+  }
+  return t(`shop.upgrade.${id}.effect`, { current, next });
+}
+
+function ShopItem({ id }: { id: UpgradeId }) {
+  const { t } = useTranslation();
+  const dispatch = useDispatch();
+  const level = useGame((game) => upgradeLevel(game, id));
+  const cost = useGame((game) => currentUpgradeCost(game, id));
+  const exhausted = useGame((game) => isUpgradeExhausted(game, id));
+  const affordable = useGame((game) => canBuyUpgrade(game, id));
+  const repeatable = isRepeatableUpgrade(id);
+  const effect = useEffectText(id, level, exhausted);
+
+  return (
+    <li className={styles.item} data-upgrade={id}>
+      <div className={styles.name}>
+        {t(`shop.upgrade.${id}.name`)}
+        {repeatable && level > 0 && <span className={styles.level}>{t('shop.level', { value: level })}</span>}
+      </div>
+      <div className={styles.action}>
+        {exhausted ? (
+          <span className={styles.lozenge}>{repeatable ? t('shop.maxed') : t('shop.purchased')}</span>
+        ) : (
+          <>
+            <span className={styles.price}>{t('shop.price', { value: cost })}</span>
+            <button
+              type="button"
+              className={styles.buy}
+              disabled={!affordable}
+              onClick={() => dispatch({ type: 'buyUpgrade', upgrade: id })}
+            >
+              {t('shop.buy')}
+            </button>
+          </>
+        )}
+      </div>
+      <div className={styles.effect}>{effect}</div>
+    </li>
+  );
+}
+
+export function Shop() {
+  const { t } = useTranslation();
+  const visible = useGame((game) => visibleUpgrades(game).join(' '));
+  const ids = upgradeIds.filter((id) => visible.split(' ').includes(id));
+  return (
+    <section className={styles.panel} aria-label={t('shop.title')}>
+      <h2 className={styles.title}>{t('shop.title')}</h2>
+      <ul className={styles.list}>
+        {ids.map((id) => (
+          <ShopItem key={id} id={id} />
+        ))}
+      </ul>
+    </section>
+  );
+}
