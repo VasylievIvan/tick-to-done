@@ -4,7 +4,7 @@ import { cardIn, dragCard, workUntilFinished } from './helpers.ts';
 test.describe('production build for testers', () => {
   test('starts the game without development tools', async ({ page }) => {
     await page.goto('/?seed=1&speed=8');
-    await expect(page).toHaveTitle('Vibecode');
+    await expect(page).toHaveTitle('Tick to Done');
     await expect(page.locator('section[data-column]')).toHaveCount(2);
     await expect(cardIn(page, 'todo', 1)).toContainText('Complexity: 10');
     expect(await page.evaluate(() => typeof window.__vibecode)).toBe('undefined');

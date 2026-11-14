@@ -2,6 +2,7 @@ import { produce } from 'immer';
 import { describe, expect, it } from 'vitest';
 import { applyCommand } from '../../core/engine.ts';
 import { createCard, createInitialState, type GameState } from '../../core/state.ts';
+import { boardWith } from '../../core/testing.ts';
 import { dropCommand, insertionIndex, isDropAllowed } from './dnd.ts';
 
 function board(): GameState {
@@ -42,6 +43,16 @@ describe('drop adapter', () => {
     expect(isDropAllowed(state, origin, 'review')).toBe(false);
     expect(insertionIndex(state, { card: 1, column: 'todo' }, { kind: 'card', card: 3, placeBelow: false })).toBe(0);
     expect(insertionIndex(state, origin, { kind: 'column', column: 'todo' })).toBeNull();
+  });
+
+  it('marks the top of Done as the landing place, wherever the card is dropped there', () => {
+    const state = boardWith({
+      review: [{ implementationDone: 10, review: { status: 'accepted' } }],
+      done: [{ implementationDone: 10 }, { implementationDone: 10 }],
+    });
+    const origin = { card: 1, column: 'review' } as const;
+    expect(insertionIndex(state, origin, { kind: 'column', column: 'done' })).toBe(0);
+    expect(insertionIndex(state, origin, { kind: 'card', card: 3, placeBelow: true })).toBe(0);
   });
 
   it('lets the core cancel a drop when the card left its origin during the gesture', () => {

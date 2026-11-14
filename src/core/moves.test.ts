@@ -94,7 +94,7 @@ describe('Auto Complete', () => {
     const session = new TestSession(boardWith({ review: [accepted], done }, owning(['autoComplete'])));
     session.advance(MOVE_US);
     expect(session.state.columns.done).toHaveLength(balance.done.maxCards);
-    expect(session.state.columns.done.at(-1)).toBe(1);
+    expect(session.state.columns.done[0]).toBe(1);
   });
 });
 

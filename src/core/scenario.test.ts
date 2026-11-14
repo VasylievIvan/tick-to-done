@@ -142,7 +142,7 @@ describe('first scenario, steps 1–10', () => {
     expect(session.state.economy).toMatchObject({ credits: 90, completedTasks: 3 });
     expect(revealed()).toEqual({ codeReview: true, done: true, balance: true, shop: true });
     expect(session.state.scenario.spawnerEnabled).toBe(true);
-    expect(session.state.columns).toEqual({ todo: [], inProgress: [], review: [], done: [1, 2, 3] });
+    expect(session.state.columns).toEqual({ todo: [], inProgress: [], review: [], done: [3, 2, 1] });
   });
 
   it('takes 45 clicks of original work, 4–8 clicks of the first rework and pays 90 Credits on every seed', () => {

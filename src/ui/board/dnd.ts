@@ -78,9 +78,9 @@ export function isDropAllowed(state: GameState, origin: DragOrigin, column: Colu
     : canMoveCard(state, origin.card, origin.column, column);
 }
 
-/** Where a card from another column would land, for the insertion marker; Done always takes it at the bottom. */
+/** Where a card from another column would land, for the insertion marker; Done always takes it at the top. */
 export function insertionIndex(state: GameState, origin: DragOrigin, target: DropTarget): number | null {
   const command = dropCommand(state, origin, target);
   if (command?.type !== 'moveCard' || !isDropAllowed(state, origin, command.to)) return null;
-  return command.to === 'done' ? state.columns.done.length : command.index;
+  return command.to === 'done' ? 0 : command.index;
 }

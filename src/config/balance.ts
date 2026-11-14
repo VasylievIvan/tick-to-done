@@ -88,7 +88,7 @@ export const balance = {
     },
   },
 
-  done: { maxCards: 20 },
+  done: { maxCards: 5 },
 
   discoveryThreshold: { numerator: 1, denominator: 2 },
 

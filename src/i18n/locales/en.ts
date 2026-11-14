@@ -1,6 +1,6 @@
 export const en = {
   app: {
-    title: 'Vibecode',
+    title: 'Tick to Done',
   },
   board: {
     column: {

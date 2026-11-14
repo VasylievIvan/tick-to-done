@@ -45,8 +45,8 @@ export function findInvariantViolations(state: GameState): string[] {
   }
 
   const doneTimes = state.columns.done.map((id) => state.cards[id]?.doneAtUs ?? 0);
-  if (doneTimes.some((time, index) => index > 0 && time < (doneTimes[index - 1] ?? 0))) {
-    report('Done is not ordered by completion time');
+  if (doneTimes.some((time, index) => index > 0 && time > (doneTimes[index - 1] ?? 0))) {
+    report('Done is not ordered newest first');
   }
   if (state.columns.done.length > balance.done.maxCards) report(`Done holds ${state.columns.done.length} cards`);
   if (state.economy.completedTasks < state.columns.done.length) report('fewer completed tasks than cards in Done');

@@ -69,12 +69,12 @@ describe('manual moves', () => {
     expect(applyCommand(state, move(99, 'todo', 'inProgress')).accepted).toBe(false);
   });
 
-  it('places the card where it was dropped, and always at the bottom of Done', () => {
+  it('places the card where it was dropped, and always at the top of Done', () => {
     const state = boardWith({ todo: [{}], inProgress: [{}, {}], review: [accepted], done: [finished, finished] });
     expect(applyCommand(state, move(1, 'todo', 'inProgress', 1)).state.columns.inProgress).toEqual([2, 1, 3]);
     expect(applyCommand(state, move(1, 'todo', 'inProgress', 0)).state.columns.inProgress).toEqual([1, 2, 3]);
     expect(applyCommand(state, move(1, 'todo', 'inProgress', 99)).state.columns.inProgress).toEqual([2, 3, 1]);
-    expect(applyCommand(state, move(4, 'review', 'done', 0)).state.columns.done).toEqual([5, 6, 4]);
+    expect(applyCommand(state, move(4, 'review', 'done', 2)).state.columns.done).toEqual([4, 5, 6]);
   });
 
   it('starts a full review on every entry into Code Review', () => {
@@ -173,10 +173,11 @@ describe('Done', () => {
 
     expect(session.move(1, 'done')).toBe(true);
     expect(session.state.columns.done).toHaveLength(balance.done.maxCards);
-    expect(session.state.columns.done[0]).toBe(3);
-    expect(session.state.columns.done.at(-1)).toBe(1);
-    expect(session.state.cards[2]).toBeUndefined();
-    expect(session.events).toContainEqual({ type: 'doneCardRemoved', card: 2 });
+    const last = balance.done.maxCards + 1;
+    expect(session.state.columns.done[0]).toBe(1);
+    expect(session.state.columns.done.at(-1)).toBe(last - 1);
+    expect(session.state.cards[last]).toBeUndefined();
+    expect(session.events).toContainEqual({ type: 'doneCardRemoved', card: last });
     expect(session.state.economy.credits).toBe(creditsBefore + 20);
     expect(session.state.economy.completedTasks).toBe(completedBefore + 1);
   });

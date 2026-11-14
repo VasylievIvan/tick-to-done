@@ -4,7 +4,7 @@ import { awaitReview, cardIn, column, completeCardManually, dragCard, workUntilF
 test.describe('manual cycle in the browser', () => {
   test('plays the three scripted tasks with the mouse', async ({ page }) => {
     await page.goto('/?seed=1');
-    await expect(page).toHaveTitle('Vibecode');
+    await expect(page).toHaveTitle('Tick to Done');
 
     // Initial screen: To Do and In Progress, one card without buttons, no balance.
     await expect(page.locator('section[data-column]')).toHaveCount(2);
@@ -55,6 +55,10 @@ test.describe('manual cycle in the browser', () => {
     await expect(page.getByTestId('credits')).toHaveText('90 Credits');
     await expect(page.getByTestId('tasks-done')).toHaveText('3 tasks done');
     await expect(column(page, 'done').locator('article')).toHaveCount(3);
+    const doneOrder = await column(page, 'done').locator('article').evaluateAll((cards) =>
+      cards.map((card) => card.getAttribute('data-card')),
+    );
+    expect(doneOrder).toEqual(['3', '2', '1']);
   });
 
   test('does not let Done cards be dragged', async ({ page }) => {

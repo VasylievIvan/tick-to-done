@@ -80,7 +80,7 @@ export function reorderCard(draft: Draft<GameState>, id: CardId, column: ColumnI
 
 /**
  * Moves a card and applies what entering the column means. `placement` is the insertion index in the target
- * column, or `'bottom'` for automatic moves; Done always receives cards at the bottom.
+ * column, or `'bottom'` for automatic moves; Done always receives cards at the top, newest first.
  */
 export function moveCardTo(
   draft: Draft<GameState>,
@@ -93,7 +93,8 @@ export function moveCardTo(
 ): void {
   removeFromColumn(draft, from, id);
   const target = draft.columns[to];
-  if (placement === 'bottom' || to === 'done') target.push(id);
+  if (to === 'done') target.unshift(id);
+  else if (placement === 'bottom') target.push(id);
   else target.splice(clamp(Math.trunc(placement), 0, target.length), 0, id);
   events.push({ type: 'cardMoved', card: id, from, to, by });
 
@@ -114,7 +115,7 @@ function completeTask(draft: Draft<GameState>, card: Draft<Card>, by: MoveActor,
 /** Done keeps the newest `DoneMaxCards` cards; the oldest simply disappears without touching Credits or stats. */
 function trimDone(draft: Draft<GameState>, events: EventSink): void {
   while (draft.columns.done.length > balance.done.maxCards) {
-    const oldest = draft.columns.done.shift();
+    const oldest = draft.columns.done.pop();
     if (oldest === undefined) return;
     Reflect.deleteProperty(draft.cards, oldest);
     events.push({ type: 'doneCardRemoved', card: oldest });
