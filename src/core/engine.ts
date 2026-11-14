@@ -9,13 +9,14 @@ import {
   requireDraftCard,
   workOnCard,
 } from './board.ts';
+import { aiTick } from './automation.ts';
 import { canBuyUpgrade, purchaseUpgrade } from './economy.ts';
 import type { GameEvent } from './events.ts';
 import { resolveReview } from './review.ts';
 import { clickPower } from './selectors.ts';
 import { spawnRegularTask } from './spawner.ts';
 import { timerIds, type CardId, type ColumnId, type GameState, type TimerId } from './state.ts';
-import { reconcileTimers, timerIntervalUs } from './timers.ts';
+import { preserveTimerShare, reconcileTimers, timerIntervalUs } from './timers.ts';
 
 export type Command =
   | {
@@ -64,9 +65,12 @@ function execute(draft: Draft<GameState>, command: Command, events: GameEvent[])
     case 'work':
       workOnCard(draft, requireDraftCard(draft, command.card), clickPower(draft), events);
       return;
-    case 'buyUpgrade':
+    case 'buyUpgrade': {
+      const aiIntervalBeforeUs = timerIntervalUs(draft, 'aiDeveloper');
       purchaseUpgrade(draft, command.upgrade, events);
+      preserveTimerShare(draft, 'aiDeveloper', aiIntervalBeforeUs);
       return;
+    }
   }
 }
 
@@ -128,8 +132,10 @@ function fireTimer(draft: Draft<GameState>, timer: TimerId, events: GameEvent[])
     case 'spawner':
       spawnRegularTask(draft, events);
       return;
-    // TODO(stages 6, 7): AI Developer and move automations.
     case 'aiDeveloper':
+      aiTick(draft, events);
+      return;
+    // TODO(stage 7): move automations.
     case 'autoAssign':
     case 'autoSubmit':
     case 'autoComplete':

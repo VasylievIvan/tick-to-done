@@ -1,5 +1,6 @@
 import type { Draft } from 'immer';
 import { balance } from '../config/balance.ts';
+import { unfinishedInProgressCount } from './counts.ts';
 import { aiTickIntervalUsAt } from './economy.ts';
 import { canSpawnRegularTask } from './spawner.ts';
 import { timerIds, type GameState, type TimerId } from './state.ts';
@@ -22,9 +23,8 @@ export function timerIntervalUs(state: GameState, timer: TimerId): number {
 /** The single rule deciding whether a timer runs: it runs exactly while it has work to do. */
 export function timerHasWork(state: GameState, timer: TimerId): boolean {
   switch (timer) {
-    // TODO(stage 6): AI Developer.
     case 'aiDeveloper':
-      return false;
+      return state.upgrades.owned.aiDeveloper && unfinishedInProgressCount(state) > 0;
     // TODO(stage 7): move automations.
     case 'autoAssign':
     case 'autoSubmit':
@@ -50,4 +50,15 @@ export function reconcileTimers(draft: Draft<GameState>): void {
       timer.elapsedUs = 0;
     }
   }
+}
+
+/**
+ * When a purchase changes a running timer's interval, the filled share of the indicator is kept: the elapsed time
+ * is rescaled (rounded down to a microsecond), so the timer neither fires at the purchase nor jumps back.
+ */
+export function preserveTimerShare(draft: Draft<GameState>, timer: TimerId, intervalBeforeUs: number): void {
+  const intervalAfterUs = timerIntervalUs(draft, timer);
+  const state = draft.timers[timer];
+  if (!state.active || intervalAfterUs === intervalBeforeUs) return;
+  state.elapsedUs = Math.floor((state.elapsedUs * intervalAfterUs) / intervalBeforeUs);
 }

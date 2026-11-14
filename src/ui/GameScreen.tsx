@@ -1,3 +1,4 @@
+import { AutomationPanel } from './automation/AutomationPanel.tsx';
 import { Board } from './board/Board.tsx';
 import { useGame } from './GameContext.tsx';
 import styles from './GameScreen.module.css';
@@ -20,6 +21,7 @@ export function GameScreen() {
         </div>
         {shopRevealed && (
           <aside className={styles.sidebar}>
+            <AutomationPanel />
             <Shop />
           </aside>
         )}

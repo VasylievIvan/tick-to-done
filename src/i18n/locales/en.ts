@@ -77,6 +77,14 @@ export const en = {
       },
     },
   },
+  automation: {
+    title: 'Automation',
+    timer: '{{name}} timer',
+    working: 'Working',
+    idle: 'Idle',
+    aiStats:
+      '{{power, number}} work per tick · tick {{tick, number(maximumFractionDigits: 3)}} s · {{slots, number}} at once',
+  },
   stats: {
     credits: '{{value, number}} Credits',
     tasksDone_one: '{{count, number}} task done',
