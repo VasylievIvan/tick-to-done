@@ -85,6 +85,24 @@ export const en = {
     aiStats:
       '{{power, number}} work per tick · tick {{tick, number(maximumFractionDigits: 3)}} s · {{slots, number}} at once',
   },
+  journal: {
+    title: 'Activity',
+    moved: {
+      player: 'You moved {{card}} to {{column}}',
+      autoAssign: 'Auto Assign took {{card}} into {{column}}',
+      autoSubmit: 'Auto Submit sent {{card}} to {{column}}',
+      autoComplete: 'Auto Complete moved {{card}} to {{column}}',
+    },
+    completed: {
+      player: 'You completed {{card}}',
+      autoAssign: 'Auto Assign completed {{card}}',
+      autoSubmit: 'Auto Submit completed {{card}}',
+      autoComplete: 'Auto Complete completed {{card}}',
+    },
+    reviewPassed: '{{card}} passed review',
+    reviewReturned_one: '{{card}} returned to {{column}} with {{count, number}} unit of rework',
+    reviewReturned_other: '{{card}} returned to {{column}} with {{count, number}} units of rework',
+  },
   stats: {
     credits: '{{value, number}} Credits',
     tasksDone_one: '{{count, number}} task done',

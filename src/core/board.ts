@@ -99,13 +99,13 @@ export function moveCardTo(
 
   const card = requireDraftCard(draft, id);
   if (to === 'review') card.review = { status: 'running', elapsedUs: 0 };
-  if (to === 'done') completeTask(draft, card, events);
+  if (to === 'done') completeTask(draft, card, by, events);
 }
 
-function completeTask(draft: Draft<GameState>, card: Draft<Card>, events: EventSink): void {
+function completeTask(draft: Draft<GameState>, card: Draft<Card>, by: MoveActor, events: EventSink): void {
   card.review = { status: 'none' };
   card.doneAtUs = draft.timeUs;
-  payReward(draft, card, events);
+  payReward(draft, card, by, events);
   reveal(draft, 'balance', events);
   trimDone(draft, events);
   advanceScenarioAfterCompletion(draft, events);

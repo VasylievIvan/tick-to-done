@@ -17,7 +17,7 @@ export type GameEvent =
     }
   | { readonly type: 'reviewPassed'; readonly card: CardId }
   | { readonly type: 'reviewReturned'; readonly card: CardId; readonly rework: number }
-  | { readonly type: 'taskCompleted'; readonly card: CardId; readonly reward: number }
+  | { readonly type: 'taskCompleted'; readonly card: CardId; readonly reward: number; readonly by: MoveActor }
   | { readonly type: 'doneCardRemoved'; readonly card: CardId }
   | { readonly type: 'upgradeDiscovered'; readonly upgrade: UpgradeId }
   | { readonly type: 'upgradePurchased'; readonly upgrade: UpgradeId; readonly cost: number }

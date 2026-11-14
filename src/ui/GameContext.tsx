@@ -23,3 +23,7 @@ export function useGame<T>(selector: (game: GameState) => T): T {
 export function useDispatch(): GameStoreState['dispatch'] {
   return useStore(useGameStore(), (state) => state.dispatch);
 }
+
+export function useJournal(): GameStoreState['journal'] {
+  return useStore(useGameStore(), (state) => state.journal);
+}

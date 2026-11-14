@@ -1,6 +1,6 @@
 import type { Draft } from 'immer';
 import { balance, type Fraction, type RepeatableUpgradeId, type UpgradeId, upgradeIds } from '../config/balance.ts';
-import type { EventSink } from './events.ts';
+import type { EventSink, MoveActor } from './events.ts';
 import type { Card, GameState } from './state.ts';
 
 function scaleByPower(value: number, ratio: Fraction, exponent: number, rounding: 'ceil' | 'floor'): number {
@@ -58,12 +58,12 @@ export function isDiscoveryThresholdReached(credits: number, baseCost: number): 
   return credits * denominator >= baseCost * numerator;
 }
 
-export function payReward(draft: Draft<GameState>, card: Card, events: EventSink): void {
+export function payReward(draft: Draft<GameState>, card: Card, by: MoveActor, events: EventSink): void {
   const reward = taskReward(card.originalComplexity);
   draft.economy.credits += reward;
   draft.economy.completedTasks += 1;
   draft.economy.totalEarned += reward;
-  events.push({ type: 'taskCompleted', card: card.number, reward });
+  events.push({ type: 'taskCompleted', card: card.number, reward, by });
   recordDiscoveries(draft, events);
 }
 

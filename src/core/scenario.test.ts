@@ -98,7 +98,7 @@ describe('first scenario, steps 1–10', () => {
     expect(session.move(1, 'done')).toBe(true);
     expect(session.events.slice(completion)).toEqual<GameEvent[]>([
       { type: 'cardMoved', card: 1, from: 'review', to: 'done', by: 'player' },
-      { type: 'taskCompleted', card: 1, reward: 20 },
+      { type: 'taskCompleted', card: 1, reward: 20, by: 'player' },
       { type: 'upgradeDiscovered', upgrade: 'betterKeyboard' },
       { type: 'interfaceRevealed', element: 'balance' },
       { type: 'cardCreated', card: 2, source: 'scenario' },
