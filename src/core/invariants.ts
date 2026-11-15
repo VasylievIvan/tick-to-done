@@ -6,7 +6,7 @@ import { activeTasksCount } from './counts.ts';
 import { columnIds, timerIds, type CardId, type GameState } from './state.ts';
 import { timerHasWork, timerIntervalUs } from './timers.ts';
 
-/** Invariants of a single state (technical-design.md, section 4). Returns human-readable violations. */
+/** Invariants of a single state (docs/v0.1/technical-design.md, section 4). Returns human-readable violations. */
 export function findInvariantViolations(state: GameState): string[] {
   const violations: string[] = [];
   const report = (message: string) => violations.push(message);

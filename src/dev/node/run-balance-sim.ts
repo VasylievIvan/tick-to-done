@@ -13,7 +13,7 @@ import {
 
 const SEEDS = 60;
 const player: PlayerModel = { clicksPerSecond: 6, dragSeconds: 1.2, purchaseSeconds: 1.5 };
-const outputPath = new URL('../../../docs/balance-simulation.md', import.meta.url);
+const outputPath = new URL('../../../docs/v0.1/balance-simulation.md', import.meta.url);
 
 function quantile(values: readonly number[], q: number): number {
   const sorted = [...values].sort((a, b) => a - b);
