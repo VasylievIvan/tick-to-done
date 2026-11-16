@@ -45,7 +45,7 @@ describe('upgrade prices', () => {
     expect(total).toBe(840);
   });
 
-  it('has exactly the eight upgrades of the v0.1 catalog', () => {
+  it('has exactly the upgrades of the v0.2 catalog', () => {
     expect([...upgradeIds].sort()).toEqual(
       [
         'aiDeveloper',
@@ -55,6 +55,7 @@ describe('upgrade prices', () => {
         'autoComplete',
         'autoSubmit',
         'betterKeyboard',
+        'fasterBacklog',
         'parallelProcessing',
       ].sort(),
     );

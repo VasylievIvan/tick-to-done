@@ -1,7 +1,7 @@
 import type { Draft } from 'immer';
 import { canAutoAssign, canAutoComplete, canAutoSubmit } from './automation.ts';
 import { unfinishedInProgressCount } from './counts.ts';
-import { aiTickIntervalUsAt } from './economy.ts';
+import { aiTickIntervalUsAt, spawnIntervalUsAt } from './economy.ts';
 import { canSpawnRegularTask } from './spawner.ts';
 import type { Rules } from './rules.ts';
 import { timerIds, type GameState, type TimerId } from './state.ts';
@@ -17,7 +17,7 @@ export function timerIntervalUs(state: GameState, rules: Rules, timer: TimerId):
     case 'autoComplete':
       return rules.moves.autoCompleteIntervalUs;
     case 'spawner':
-      return rules.spawner.intervalUs;
+      return spawnIntervalUsAt(rules, state.upgrades.levels.fasterBacklog);
   }
 }
 

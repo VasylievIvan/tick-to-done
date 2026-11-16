@@ -4,6 +4,7 @@ import {
   clickPowerAt,
   isUpgradeVisible,
   parallelTasksAt,
+  spawnIntervalUsAt,
 } from './economy.ts';
 import { upgradeIds, type RepeatableUpgradeId, type Rules, type UpgradeId } from './rules.ts';
 import type { Card, GameState, TimerId } from './state.ts';
@@ -37,6 +38,10 @@ export function aiTickIntervalUs(state: GameState, rules: Rules): number {
   return aiTickIntervalUsAt(rules, state.upgrades.levels.aiTickSpeed);
 }
 
+export function spawnIntervalUs(state: GameState, rules: Rules): number {
+  return spawnIntervalUsAt(rules, state.upgrades.levels.fasterBacklog);
+}
+
 export function reviewProgress(card: Card, rules: Rules): number {
   switch (card.review.status) {
     case 'none':
@@ -68,5 +73,7 @@ export function upgradeEffectAt(rules: Rules, id: RepeatableUpgradeId, level: nu
       return aiTickIntervalUsAt(rules, level);
     case 'parallelProcessing':
       return parallelTasksAt(rules, level);
+    case 'fasterBacklog':
+      return spawnIntervalUsAt(rules, level);
   }
 }

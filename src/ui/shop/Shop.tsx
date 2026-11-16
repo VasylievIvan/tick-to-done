@@ -19,9 +19,9 @@ function useEffectText(id: UpgradeId, level: number, exhausted: boolean): string
   if (!isRepeatableUpgrade(id)) return t(`shop.upgrade.${id}.effect`);
   const current = upgradeEffectAt(rules, id, level);
   const next = upgradeEffectAt(rules, id, level + 1);
-  if (id === 'aiTickSpeed') {
+  if (id === 'aiTickSpeed' || id === 'fasterBacklog') {
     const seconds = { current: current / MICROSECONDS_PER_SECOND, next: next / MICROSECONDS_PER_SECOND };
-    return exhausted ? t('shop.upgrade.aiTickSpeed.effectMaxed', seconds) : t('shop.upgrade.aiTickSpeed.effect', seconds);
+    return exhausted ? t(`shop.upgrade.${id}.effectMaxed`, seconds) : t(`shop.upgrade.${id}.effect`, seconds);
   }
   return t(`shop.upgrade.${id}.effect`, { current, next });
 }

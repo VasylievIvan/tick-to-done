@@ -72,6 +72,17 @@ export function isAiTickSpeedMaxedAt(rules: Rules, tickSpeedLevels: number): boo
   return aiTickIntervalUsAt(rules, tickSpeedLevels) <= rules.ai.minTickIntervalUs;
 }
 
+/** `SpawnInterval = max(1 s, 2 s × 0.8 ^ FasterBacklogLevels)`, in whole microseconds. */
+export function spawnIntervalUsAt(rules: Rules, fasterBacklogLevels: number): number {
+  const { intervalUs, intervalFactorPerFasterBacklogLevel, minIntervalUs } = rules.spawner;
+  const scaled = scaleByPower(intervalUs, intervalFactorPerFasterBacklogLevel, fasterBacklogLevels, 'floor');
+  return Math.max(minIntervalUs, scaled);
+}
+
+export function isFasterBacklogMaxedAt(rules: Rules, fasterBacklogLevels: number): boolean {
+  return spawnIntervalUsAt(rules, fasterBacklogLevels) <= rules.spawner.minIntervalUs;
+}
+
 export function isDiscoveryThresholdReached(rules: Rules, credits: number, baseCost: number): boolean {
   const { numerator, denominator } = rules.discoveryThreshold;
   return credits * denominator >= baseCost * numerator;
@@ -107,9 +118,10 @@ export function isUpgradeVisible(state: GameState, rules: Rules, id: UpgradeId):
   return !rules.upgrades[id].requiresAiDeveloper || state.upgrades.owned.aiDeveloper;
 }
 
-/** A bought one-time upgrade and AI Tick Speed at its minimum interval stay in the shop but cannot be bought. */
+/** Bought one-time upgrades and speed-ups at their minimum interval stay in the shop but cannot be bought. */
 export function isUpgradeExhausted(state: GameState, rules: Rules, id: UpgradeId): boolean {
   if (id === 'aiTickSpeed') return isAiTickSpeedMaxedAt(rules, state.upgrades.levels.aiTickSpeed);
+  if (id === 'fasterBacklog') return isFasterBacklogMaxedAt(rules, state.upgrades.levels.fasterBacklog);
   return !isRepeatableUpgrade(id) && state.upgrades.owned[id];
 }
 

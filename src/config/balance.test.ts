@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { aiTickIntervalUsAt, isDiscoveryThresholdReached, upgradeCost } from '../core/economy.ts';
+import {
+  aiTickIntervalUsAt,
+  isDiscoveryThresholdReached,
+  isFasterBacklogMaxedAt,
+  spawnIntervalUsAt,
+  upgradeCost,
+} from '../core/economy.ts';
 import type { Rules, UpgradeId } from '../core/rules.ts';
 import { visibleUpgrades } from '../core/selectors.ts';
 import { TestSession } from '../core/testing.ts';
@@ -23,7 +29,13 @@ const specification: Rules = {
     { complexity: 20, firstReview: 'return' },
   ],
   regularTaskComplexity: { min: 10, max: 50 },
-  spawner: { intervalUs: s(2), toDoLimit: 5, boardLimit: 10 },
+  spawner: {
+    intervalUs: s(2),
+    intervalFactorPerFasterBacklogLevel: { numerator: 4, denominator: 5 },
+    minIntervalUs: s(1),
+    toDoLimit: 5,
+    boardLimit: 10,
+  },
   clickPower: { base: 1, perKeyboardLevel: 1 },
   ai: {
     baseWorkPower: 2,
@@ -51,6 +63,7 @@ const specification: Rules = {
     aiWorkPower: { baseCost: 1000, costGrowth: { numerator: 13, denominator: 10 }, requiresAiDeveloper: true },
     aiTickSpeed: { baseCost: 1000, costGrowth: { numerator: 3, denominator: 2 }, requiresAiDeveloper: true },
     parallelProcessing: { baseCost: 5000, costGrowth: { numerator: 11, denominator: 5 }, requiresAiDeveloper: true },
+    fasterBacklog: { baseCost: 1500, costGrowth: { numerator: 9, denominator: 5 }, requiresAiDeveloper: false },
   },
 };
 
@@ -92,6 +105,22 @@ describe('approved balance matches the specification', () => {
       .map((id) => upgradeCost(balance, id, 0))
       .reduce((sum, cost) => sum + cost, 0);
     expect(total).toBe(2200);
+  });
+
+  it('prices the four Faster Backlog levels at 1500, 2700, 4860, 8748', () => {
+    expect(prices('fasterBacklog', 4)).toEqual([1500, 2700, 4860, 8748]);
+  });
+
+  it('shortens the generator interval 2 → 1.6 → 1.28 → 1.024 → 1 s and stops after the fourth Faster Backlog', () => {
+    expect([0, 1, 2, 3, 4].map((level) => spawnIntervalUsAt(balance, level))).toEqual([
+      2_000_000, 1_600_000, 1_280_000, 1_024_000, 1_000_000,
+    ]);
+    expect([3, 4].map((level) => isFasterBacklogMaxedAt(balance, level))).toEqual([false, true]);
+  });
+
+  it('discovers Faster Backlog at a balance of 750', () => {
+    const { baseCost } = balance.upgrades.fasterBacklog;
+    expect([749, 750].map((credits) => isDiscoveryThresholdReached(balance, credits, baseCost))).toEqual([false, true]);
   });
 
   it('reaches the 0.25 s AI tick on the seventh AI Tick Speed purchase', () => {

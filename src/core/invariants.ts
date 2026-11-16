@@ -1,5 +1,5 @@
 import { isImplementationComplete, isUnfinished } from './cards.ts';
-import { isAiTickSpeedMaxedAt, isRepeatableUpgrade, taskReward, upgradeCost } from './economy.ts';
+import { isAiTickSpeedMaxedAt, isFasterBacklogMaxedAt, isRepeatableUpgrade, taskReward, upgradeCost } from './economy.ts';
 import type { GameEvent } from './events.ts';
 import { activeTasksCount } from './counts.ts';
 import { upgradeIds, type Rules } from './rules.ts';
@@ -74,6 +74,9 @@ export function findInvariantViolations(state: GameState, rules: Rules): string[
   if (revealed.shop !== state.scenario.spawnerEnabled) report('shop and generator are out of step');
   if (state.upgrades.levels.aiTickSpeed > 0 && isAiTickSpeedMaxedAt(rules, state.upgrades.levels.aiTickSpeed - 1)) {
     report('AI Tick Speed was bought past its minimum interval');
+  }
+  if (state.upgrades.levels.fasterBacklog > 0 && isFasterBacklogMaxedAt(rules, state.upgrades.levels.fasterBacklog - 1)) {
+    report('Faster Backlog was bought past its minimum interval');
   }
 
   return violations;

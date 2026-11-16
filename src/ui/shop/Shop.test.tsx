@@ -67,4 +67,25 @@ describe('shop panel', () => {
     renderGame(state, <Shop />);
     expect(item('AI Tick Speed').getByText('AI tick: 0.41 s → 0.328 s')).toBeInTheDocument();
   });
+
+  it('shows Faster Backlog as the generator interval in seconds and marks it Max at the minimum', () => {
+    const base = new TestSession(1).completeScriptedTasks().state;
+    const discovered = produce(base, (draft) => {
+      draft.upgrades.discovered.fasterBacklog = true;
+      draft.economy.credits = 10_000;
+    });
+    const first = renderGame(discovered, <Shop />);
+    expect(item('Faster Backlog').getByText('New task every 3 s → 2.4 s')).toBeInTheDocument();
+    expect(item('Faster Backlog').getByText('1,500 Credits')).toBeInTheDocument();
+    expect(item('Faster Backlog').getByRole('button', { name: 'Buy' })).toBeEnabled();
+    first.unmount();
+
+    const maxed = produce(discovered, (draft) => {
+      draft.upgrades.levels.fasterBacklog = 5;
+    });
+    renderGame(maxed, <Shop />);
+    expect(item('Faster Backlog').getByText('Max')).toBeInTheDocument();
+    expect(item('Faster Backlog').getByText('New task every 1 s')).toBeInTheDocument();
+    expect(item('Faster Backlog').queryByRole('button')).toBeNull();
+  });
 });

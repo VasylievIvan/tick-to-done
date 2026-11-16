@@ -66,9 +66,11 @@ function execute(draft: Draft<GameState>, rules: Rules, command: Command, events
       workOnCard(draft, requireDraftCard(draft, command.card), clickPower(draft, rules), events);
       return;
     case 'buyUpgrade': {
-      const aiIntervalBeforeUs = timerIntervalUs(draft, rules, 'aiDeveloper');
+      const intervalsBeforeUs = timerIds.map((id) => timerIntervalUs(draft, rules, id));
       purchaseUpgrade(draft, rules, command.upgrade, events);
-      preserveTimerShare(draft, rules, 'aiDeveloper', aiIntervalBeforeUs);
+      timerIds.forEach((id, index) => {
+        preserveTimerShare(draft, rules, id, intervalsBeforeUs[index] ?? 0);
+      });
       return;
     }
   }

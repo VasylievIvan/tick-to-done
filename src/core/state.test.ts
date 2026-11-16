@@ -36,7 +36,7 @@ describe('initial state', () => {
 
   it('has no automation, no purchases and no discovered upgrades', () => {
     expect(Object.values(state.upgrades.owned)).toEqual([false, false, false, false]);
-    expect(Object.values(state.upgrades.levels)).toEqual([0, 0, 0, 0]);
+    expect(Object.values(state.upgrades.levels)).toEqual([0, 0, 0, 0, 0]);
     for (const id of upgradeIds) expect(state.upgrades.discovered[id]).toBe(false);
     for (const id of timerIds) expect(state.timers[id]).toEqual({ active: false, elapsedUs: 0 });
   });

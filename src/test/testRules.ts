@@ -20,6 +20,8 @@ export const testRules: Rules = {
   regularTaskComplexity: { min: 10, max: 30 },
 
   spawner: {
+    intervalFactorPerFasterBacklogLevel: { numerator: 4, denominator: 5 },
+    minIntervalUs: seconds(1),
     intervalUs: seconds(3),
     toDoLimit: 5,
     boardLimit: 10,
@@ -80,6 +82,11 @@ export const testRules: Rules = {
       baseCost: 480,
       costGrowth: { numerator: 11, denominator: 5 },
       requiresAiDeveloper: true,
+    },
+    fasterBacklog: {
+      baseCost: 1500,
+      costGrowth: { numerator: 2, denominator: 1 },
+      requiresAiDeveloper: false,
     },
   },
 };

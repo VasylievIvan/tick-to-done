@@ -16,6 +16,8 @@ export const balance: Rules = {
   regularTaskComplexity: { min: 10, max: 50 },
 
   spawner: {
+    intervalFactorPerFasterBacklogLevel: { numerator: 4, denominator: 5 },
+    minIntervalUs: seconds(1),
     intervalUs: seconds(2),
     toDoLimit: 5,
     boardLimit: 10,
@@ -76,6 +78,11 @@ export const balance: Rules = {
       baseCost: 5000,
       costGrowth: { numerator: 11, denominator: 5 },
       requiresAiDeveloper: true,
+    },
+    fasterBacklog: {
+      baseCost: 1500,
+      costGrowth: { numerator: 9, denominator: 5 },
+      requiresAiDeveloper: false,
     },
   },
 };

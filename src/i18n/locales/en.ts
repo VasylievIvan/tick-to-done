@@ -75,6 +75,12 @@ export const en = {
         name: 'Parallel Processing',
         effect: 'Tasks AI works on at once: {{current, number}} → {{next, number}}',
       },
+      fasterBacklog: {
+        name: 'Faster Backlog',
+        effect:
+          'New task every {{current, number(maximumFractionDigits: 3)}} s → {{next, number(maximumFractionDigits: 3)}} s',
+        effectMaxed: 'New task every {{current, number(maximumFractionDigits: 3)}} s',
+      },
     },
   },
   automation: {

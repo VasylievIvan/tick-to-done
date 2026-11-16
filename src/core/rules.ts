@@ -20,11 +20,18 @@ export const upgradeIds = [
   'aiWorkPower',
   'aiTickSpeed',
   'parallelProcessing',
+  'fasterBacklog',
 ] as const;
 
 export type UpgradeId = (typeof upgradeIds)[number];
 
-export const repeatableUpgradeIds = ['betterKeyboard', 'aiWorkPower', 'aiTickSpeed', 'parallelProcessing'] as const;
+export const repeatableUpgradeIds = [
+  'betterKeyboard',
+  'aiWorkPower',
+  'aiTickSpeed',
+  'parallelProcessing',
+  'fasterBacklog',
+] as const;
 
 export type RepeatableUpgradeId = (typeof repeatableUpgradeIds)[number];
 
@@ -59,7 +66,10 @@ export interface Rules {
   readonly regularTaskComplexity: { readonly min: number; readonly max: number };
 
   readonly spawner: {
+    /** Interval before any Faster Backlog purchase. */
     readonly intervalUs: number;
+    readonly intervalFactorPerFasterBacklogLevel: Fraction;
+    readonly minIntervalUs: number;
     readonly toDoLimit: number;
     readonly boardLimit: number;
   };
