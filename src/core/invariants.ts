@@ -1,13 +1,13 @@
-import { balance, upgradeIds } from '../config/balance.ts';
 import { isImplementationComplete, isUnfinished } from './cards.ts';
 import { isAiTickSpeedMaxedAt, isRepeatableUpgrade, taskReward, upgradeCost } from './economy.ts';
 import type { GameEvent } from './events.ts';
 import { activeTasksCount } from './counts.ts';
+import { upgradeIds, type Rules } from './rules.ts';
 import { columnIds, timerIds, type CardId, type GameState } from './state.ts';
 import { timerHasWork, timerIntervalUs } from './timers.ts';
 
 /** Invariants of a single state (docs/v0.1/technical-design.md, section 4). Returns human-readable violations. */
-export function findInvariantViolations(state: GameState): string[] {
+export function findInvariantViolations(state: GameState, rules: Rules): string[] {
   const violations: string[] = [];
   const report = (message: string) => violations.push(message);
 
@@ -37,7 +37,7 @@ export function findInvariantViolations(state: GameState): string[] {
     const inDone = state.columns.done.includes(id);
     if (inReview && card.review.status === 'none') report(`card ${id} is in Code Review without a review`);
     if (!inReview && card.review.status !== 'none') report(`card ${id} has a review outside Code Review`);
-    if (card.review.status === 'running' && !(card.review.elapsedUs >= 0 && card.review.elapsedUs < balance.review.durationUs)) {
+    if (card.review.status === 'running' && !(card.review.elapsedUs >= 0 && card.review.elapsedUs < rules.review.durationUs)) {
       report(`card ${id} review elapsed ${card.review.elapsedUs}`);
     }
     if ((inReview || inDone) && isUnfinished(card)) report(`card ${id} left In Progress with unfinished work`);
@@ -48,22 +48,22 @@ export function findInvariantViolations(state: GameState): string[] {
   if (doneTimes.some((time, index) => index > 0 && time > (doneTimes[index - 1] ?? 0))) {
     report('Done is not ordered newest first');
   }
-  if (state.columns.done.length > balance.done.maxCards) report(`Done holds ${state.columns.done.length} cards`);
+  if (state.columns.done.length > rules.done.maxCards) report(`Done holds ${state.columns.done.length} cards`);
   if (state.economy.completedTasks < state.columns.done.length) report('fewer completed tasks than cards in Done');
 
   if (!Number.isSafeInteger(state.economy.credits) || state.economy.credits < 0) {
     report(`credits ${state.economy.credits}`);
   }
 
-  if (activeTasksCount(state) > balance.spawner.boardLimit) report(`active tasks ${activeTasksCount(state)}`);
+  if (activeTasksCount(state) > rules.spawner.boardLimit) report(`active tasks ${activeTasksCount(state)}`);
   const freshToDo = state.columns.todo.filter((id) => state.cards[id]?.returnCount === 0).length;
-  if (freshToDo > balance.spawner.toDoLimit) report(`To Do holds ${freshToDo} never-returned cards`);
+  if (freshToDo > rules.spawner.toDoLimit) report(`To Do holds ${freshToDo} never-returned cards`);
 
   for (const id of timerIds) {
     const timer = state.timers[id];
-    if (timer.active !== timerHasWork(state, id)) report(`timer ${id} active=${timer.active} without matching work`);
+    if (timer.active !== timerHasWork(state, rules, id)) report(`timer ${id} active=${timer.active} without matching work`);
     if (!timer.active && timer.elapsedUs !== 0) report(`stopped timer ${id} keeps ${timer.elapsedUs} µs`);
-    if (timer.active && !(timer.elapsedUs >= 0 && timer.elapsedUs < timerIntervalUs(state, id))) {
+    if (timer.active && !(timer.elapsedUs >= 0 && timer.elapsedUs < timerIntervalUs(state, rules, id))) {
       report(`timer ${id} elapsed ${timer.elapsedUs}`);
     }
   }
@@ -72,7 +72,7 @@ export function findInvariantViolations(state: GameState): string[] {
   if (revealed.done && !revealed.codeReview) report('Done revealed before Code Review');
   if (revealed.balance !== state.economy.completedTasks > 0) report('balance visibility does not match payouts');
   if (revealed.shop !== state.scenario.spawnerEnabled) report('shop and generator are out of step');
-  if (state.upgrades.levels.aiTickSpeed > 0 && isAiTickSpeedMaxedAt(state.upgrades.levels.aiTickSpeed - 1)) {
+  if (state.upgrades.levels.aiTickSpeed > 0 && isAiTickSpeedMaxedAt(rules, state.upgrades.levels.aiTickSpeed - 1)) {
     report('AI Tick Speed was bought past its minimum interval');
   }
 
@@ -81,6 +81,7 @@ export function findInvariantViolations(state: GameState): string[] {
 
 /** Invariants that relate a state to the one before it and to the events between them. */
 export function findTransitionViolations(
+  rules: Rules,
   before: GameState,
   after: GameState,
   events: readonly GameEvent[],
@@ -103,7 +104,7 @@ export function findTransitionViolations(
         earned += event.reward;
         if (before.columns.done.includes(event.card)) report(`card ${event.card} was paid twice`);
         const card = after.cards[event.card] ?? before.cards[event.card];
-        if (card && event.reward !== taskReward(card.originalComplexity)) report(`card ${event.card} reward ${event.reward}`);
+        if (card && event.reward !== taskReward(rules, card.originalComplexity)) report(`card ${event.card} reward ${event.reward}`);
         break;
       }
       case 'upgradePurchased':
@@ -139,7 +140,7 @@ export function findTransitionViolations(
   for (const event of events) {
     if (event.type !== 'upgradePurchased') continue;
     const levelBefore = isRepeatableUpgrade(event.upgrade) ? before.upgrades.levels[event.upgrade] : 0;
-    if (event.cost !== upgradeCost(event.upgrade, levelBefore)) report(`${event.upgrade} charged ${event.cost}`);
+    if (event.cost !== upgradeCost(rules, event.upgrade, levelBefore)) report(`${event.upgrade} charged ${event.cost}`);
   }
 
   return violations;

@@ -1,4 +1,3 @@
-import type { OneTimeUpgradeId, UpgradeId } from '../config/balance.ts';
 import { advanceTime, applyCommand, type Command } from '../core/engine.ts';
 import {
   canBuyUpgrade,
@@ -8,6 +7,7 @@ import {
   isUnfinished,
   visibleUpgrades,
 } from '../core/selectors.ts';
+import type { OneTimeUpgradeId, Rules, UpgradeId } from '../core/rules.ts';
 import { columnIds, createInitialState, timerIds, type ColumnId, type GameState, type TimerId } from '../core/state.ts';
 
 /**
@@ -23,6 +23,7 @@ export interface PlayerModel {
 export type PurchaseStrategy = 'automationFirst' | 'keyboardFirst' | 'cheapestFirst';
 
 export interface SimulationOptions {
+  readonly rules: Rules;
   readonly seed: number;
   readonly strategy: PurchaseStrategy;
   readonly player: PlayerModel;
@@ -55,23 +56,23 @@ export interface SimulationResult {
 const STEP_US = 50_000;
 const oneTimeAutomations: readonly OneTimeUpgradeId[] = ['aiDeveloper', 'autoAssign', 'autoSubmit', 'autoComplete'];
 
-function nextPurchase(state: GameState, strategy: PurchaseStrategy): UpgradeId | null {
-  const visible = visibleUpgrades(state);
+function nextPurchase(state: GameState, rules: Rules, strategy: PurchaseStrategy): UpgradeId | null {
+  const visible = visibleUpgrades(state, rules);
   const cheapest = (ids: readonly UpgradeId[]) =>
-    [...ids].sort((a, b) => currentUpgradeCost(state, a) - currentUpgradeCost(state, b))[0] ?? null;
+    [...ids].sort((a, b) => currentUpgradeCost(state, rules, a) - currentUpgradeCost(state, rules, b))[0] ?? null;
   const missingAutomation = oneTimeAutomations.find((id) => !state.upgrades.owned[id]);
 
   let wanted: UpgradeId | null;
   if (strategy === 'cheapestFirst') {
-    wanted = cheapest(visible.filter((id) => canBuyUpgrade(state, id)));
+    wanted = cheapest(visible.filter((id) => canBuyUpgrade(state, rules, id)));
   } else if (strategy === 'keyboardFirst' && state.upgrades.levels.betterKeyboard < 2) {
     wanted = 'betterKeyboard';
   } else if (missingAutomation) {
     wanted = missingAutomation;
   } else {
-    wanted = cheapest(visible.filter((id) => canBuyUpgrade(state, id)));
+    wanted = cheapest(visible.filter((id) => canBuyUpgrade(state, rules, id)));
   }
-  return wanted !== null && canBuyUpgrade(state, wanted) ? wanted : null;
+  return wanted !== null && canBuyUpgrade(state, rules, wanted) ? wanted : null;
 }
 
 /** Forward moves the player still makes by hand: the end of the pipeline first, as a person would clear it. */
@@ -114,8 +115,8 @@ const zeroTimers = (): Record<TimerId, number> => ({
 });
 
 export function simulate(options: SimulationOptions): SimulationResult {
-  const { player } = options;
-  let state = createInitialState(options.seed);
+  const { player, rules } = options;
+  let state = createInitialState(rules, options.seed);
   let timeUs = 0;
   let busyUntilUs = 0;
   let clicks = 0;
@@ -137,11 +138,11 @@ export function simulate(options: SimulationOptions): SimulationResult {
     if (fullAutomation && timeUs >= fullAutomation.seconds * 1_000_000 + observeUs) break;
 
     if (timeUs >= busyUntilUs) {
-      const purchase = nextPurchase(state, options.strategy);
+      const purchase = nextPurchase(state, rules, options.strategy);
       const drag = purchase === null ? nextDrag(state) : null;
       const click = purchase === null && drag === null ? nextClick(state) : null;
       if (purchase !== null) {
-        state = applyCommand(state, { type: 'buyUpgrade', upgrade: purchase }).state;
+        state = applyCommand(state, rules, { type: 'buyUpgrade', upgrade: purchase }).state;
         purchaseOrder.push(purchase);
         firstPurchase ??= { ...milestone(), upgrade: purchase };
         if (!isRepeatableUpgrade(purchase)) automations[purchase] = milestone();
@@ -151,17 +152,17 @@ export function simulate(options: SimulationOptions): SimulationResult {
         }
         busyUntilUs = timeUs + player.purchaseSeconds * 1_000_000;
       } else if (drag !== null) {
-        state = applyCommand(state, drag).state;
+        state = applyCommand(state, rules, drag).state;
         drags += 1;
         busyUntilUs = timeUs + player.dragSeconds * 1_000_000;
       } else if (click !== null) {
-        state = applyCommand(state, click).state;
+        state = applyCommand(state, rules, click).state;
         clicks += 1;
         busyUntilUs = timeUs + 1_000_000 / player.clicksPerSecond;
       }
     }
 
-    state = advanceTime(state, STEP_US).state;
+    state = advanceTime(state, rules, STEP_US).state;
     timeUs += STEP_US;
 
     if (fullAutomation) {

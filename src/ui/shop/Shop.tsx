@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next';
-import { MICROSECONDS_PER_SECOND, type UpgradeId } from '../../config/balance.ts';
 import {
   canBuyUpgrade,
   currentUpgradeCost,
@@ -9,15 +8,17 @@ import {
   upgradeLevel,
   visibleUpgrades,
 } from '../../core/selectors.ts';
-import { useDispatch, useGame, useGameList } from '../GameContext.tsx';
+import { MICROSECONDS_PER_SECOND, type UpgradeId } from '../../core/rules.ts';
+import { useDispatch, useGame, useGameList, useRules } from '../GameContext.tsx';
 import panel from '../Panel.module.css';
 import styles from './Shop.module.css';
 
 function useEffectText(id: UpgradeId, level: number, exhausted: boolean): string {
   const { t } = useTranslation();
+  const rules = useRules();
   if (!isRepeatableUpgrade(id)) return t(`shop.upgrade.${id}.effect`);
-  const current = upgradeEffectAt(id, level);
-  const next = upgradeEffectAt(id, level + 1);
+  const current = upgradeEffectAt(rules, id, level);
+  const next = upgradeEffectAt(rules, id, level + 1);
   if (id === 'aiTickSpeed') {
     const seconds = { current: current / MICROSECONDS_PER_SECOND, next: next / MICROSECONDS_PER_SECOND };
     return exhausted ? t('shop.upgrade.aiTickSpeed.effectMaxed', seconds) : t('shop.upgrade.aiTickSpeed.effect', seconds);
@@ -29,9 +30,9 @@ function ShopItem({ id }: { id: UpgradeId }) {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const level = useGame((game) => upgradeLevel(game, id));
-  const cost = useGame((game) => currentUpgradeCost(game, id));
-  const exhausted = useGame((game) => isUpgradeExhausted(game, id));
-  const affordable = useGame((game) => canBuyUpgrade(game, id));
+  const cost = useGame((game, rules) => currentUpgradeCost(game, rules, id));
+  const exhausted = useGame((game, rules) => isUpgradeExhausted(game, rules, id));
+  const affordable = useGame((game, rules) => canBuyUpgrade(game, rules, id));
   const repeatable = isRepeatableUpgrade(id);
   const effect = useEffectText(id, level, exhausted);
 

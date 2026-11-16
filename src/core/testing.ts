@@ -1,11 +1,12 @@
 import { produce, type Draft } from 'immer';
 import { expect } from 'vitest';
-import { balance } from '../config/balance.ts';
 import { columnOf } from './board.ts';
 import { applyCommand, advanceTime, type Command, type StepResult } from './engine.ts';
 import type { GameEvent } from './events.ts';
 import { findInvariantViolations, findTransitionViolations } from './invariants.ts';
 import { currentWorkRemaining } from './cards.ts';
+import type { Rules } from './rules.ts';
+import { testRules } from '../test/testRules.ts';
 import { createCard, createInitialState, type Card, type CardId, type ColumnId, type GameState } from './state.ts';
 import { reconcileTimers } from './timers.ts';
 
@@ -14,22 +15,24 @@ export class TestSession {
   state: GameState;
   readonly events: GameEvent[] = [];
   workClicks = 0;
+  readonly rules: Rules;
 
-  constructor(seedOrState: number | GameState = 1) {
-    this.state = typeof seedOrState === 'number' ? createInitialState(seedOrState) : seedOrState;
-    expect(findInvariantViolations(this.state)).toEqual([]);
+  constructor(seedOrState: number | GameState = 1, rules: Rules = testRules) {
+    this.rules = rules;
+    this.state = typeof seedOrState === 'number' ? createInitialState(rules, seedOrState) : seedOrState;
+    expect(findInvariantViolations(this.state, rules)).toEqual([]);
   }
 
   private record(result: StepResult): readonly GameEvent[] {
-    expect(findTransitionViolations(this.state, result.state, result.events)).toEqual([]);
-    expect(findInvariantViolations(result.state)).toEqual([]);
+    expect(findTransitionViolations(this.rules, this.state, result.state, result.events)).toEqual([]);
+    expect(findInvariantViolations(result.state, this.rules)).toEqual([]);
     this.state = result.state;
     this.events.push(...result.events);
     return result.events;
   }
 
   command(command: Command): boolean {
-    const result = applyCommand(this.state, command);
+    const result = applyCommand(this.state, this.rules, command);
     if (!result.accepted) {
       expect(result.state).toBe(this.state);
       expect(result.events).toEqual([]);
@@ -41,7 +44,7 @@ export class TestSession {
   }
 
   advance(deltaUs: number): readonly GameEvent[] {
-    return this.record(advanceTime(this.state, deltaUs));
+    return this.record(advanceTime(this.state, this.rules, deltaUs));
   }
 
   card(id: CardId): Card {
@@ -85,7 +88,7 @@ export class TestSession {
         expect(this.move(id, 'review')).toBe(true);
       }
       const review = this.card(id).review;
-      if (review.status === 'running') this.advance(balance.review.durationUs - review.elapsedUs);
+      if (review.status === 'running') this.advance(this.rules.review.durationUs - review.elapsedUs);
       if (this.card(id).review.status === 'accepted') {
         expect(this.move(id, 'done')).toBe(true);
         return;
@@ -95,7 +98,7 @@ export class TestSession {
 
   /** Plays the three scripted tasks by hand; returns at the moment the third one reaches Done. */
   completeScriptedTasks(): this {
-    for (const id of balance.scenarioTasks.map((_, index) => index + 1)) this.completeByHand(id);
+    for (const id of this.rules.scenarioTasks.map((_, index) => index + 1)) this.completeByHand(id);
     expect(this.state.scenario.spawnerEnabled).toBe(true);
     return this;
   }
@@ -119,14 +122,15 @@ export type CardSetup = Partial<Pick<Card, 'implementationDone' | 'reworkRequire
 export function boardWith(
   layout: Partial<Record<ColumnId, readonly CardSetup[]>>,
   tweak?: (draft: Draft<GameState>) => void,
+  rules: Rules = testRules,
 ): GameState {
-  return produce(createInitialState(1), (draft) => {
+  return produce(createInitialState(rules, 1), (draft) => {
     draft.cards = {};
     draft.columns = { todo: [], inProgress: [], review: [], done: [] };
     let number = 1;
     for (const column of ['todo', 'inProgress', 'review', 'done'] as const) {
       for (const setup of layout[column] ?? []) {
-        const card: Draft<Card> = createCard(number, setup.complexity ?? 10, null);
+        const card: Draft<Card> = createCard(rules, number, setup.complexity ?? 10, null);
         Object.assign(card, setup);
         if (column === 'done') card.doneAtUs = 0;
         draft.cards[number] = card;
@@ -136,10 +140,10 @@ export function boardWith(
     }
     draft.nextCardNumber = number;
     draft.scenario.revealed = { codeReview: true, done: true, balance: true, shop: true };
-    draft.scenario.scriptedTasksIssued = balance.scenarioTasks.length;
+    draft.scenario.scriptedTasksIssued = rules.scenarioTasks.length;
     draft.scenario.spawnerEnabled = true;
-    draft.economy.completedTasks = Math.max(draft.columns.done.length, balance.scenarioTasks.length);
+    draft.economy.completedTasks = Math.max(draft.columns.done.length, rules.scenarioTasks.length);
     tweak?.(draft);
-    reconcileTimers(draft);
+    reconcileTimers(draft, rules);
   });
 }

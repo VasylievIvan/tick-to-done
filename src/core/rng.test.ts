@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { balance } from '../config/balance.ts';
+import { testRules } from '../test/testRules.ts';
 import {
   ceilScaledByUniformFactor,
   createRngState,
@@ -52,7 +52,7 @@ describe('seeded generator', () => {
 
 describe('distributions', () => {
   it('draws regular task complexity as a uniform integer from 10 to 30 inclusive', () => {
-    const { min, max } = balance.regularTaskComplexity;
+    const { min, max } = testRules.regularTaskComplexity;
     expect(uniformIntInclusive(0, min, max)).toBe(10);
     expect(uniformIntInclusive(UINT32_MAX, min, max)).toBe(30);
     const seen = new Set(drawSequence(1, 'generation', 5000).map((draw) => uniformIntInclusive(draw, min, max)));
@@ -61,15 +61,15 @@ describe('distributions', () => {
 
   it('returns about 15% of reviews', () => {
     const draws = drawSequence(3, 'review', 20_000);
-    const returned = draws.filter((draw) => isBelowProbability(draw, balance.review.returnProbability)).length;
+    const returned = draws.filter((draw) => isBelowProbability(draw, testRules.review.returnProbability)).length;
     expect(returned / draws.length).toBeGreaterThan(0.14);
     expect(returned / draws.length).toBeLessThan(0.16);
-    expect(isBelowProbability(0, balance.review.returnProbability)).toBe(true);
-    expect(isBelowProbability(UINT32_MAX, balance.review.returnProbability)).toBe(false);
+    expect(isBelowProbability(0, testRules.review.returnProbability)).toBe(true);
+    expect(isBelowProbability(UINT32_MAX, testRules.review.returnProbability)).toBe(false);
   });
 
   it('computes Rework = ceil(OriginalComplexity × factor) with factor in [0.2, 0.4)', () => {
-    const range = balance.review.reworkFactor;
+    const range = testRules.review.reworkFactor;
     expect(ceilScaledByUniformFactor(0, 20, range)).toBe(4);
     expect(ceilScaledByUniformFactor(UINT32_MAX, 20, range)).toBe(8);
     expect(ceilScaledByUniformFactor(0, 10, range)).toBe(2);
@@ -81,7 +81,7 @@ describe('distributions', () => {
 
   it('keeps the third scripted task rework within 4–8 units for any draw', () => {
     const amounts = new Set(
-      drawSequence(9, 'rework', 5000).map((draw) => ceilScaledByUniformFactor(draw, 20, balance.review.reworkFactor)),
+      drawSequence(9, 'rework', 5000).map((draw) => ceilScaledByUniformFactor(draw, 20, testRules.review.reworkFactor)),
     );
     expect([...amounts].sort((a, b) => a - b)).toEqual([5, 6, 7, 8]);
   });

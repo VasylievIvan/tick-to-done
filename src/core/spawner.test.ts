@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { balance } from '../config/balance.ts';
+import { testRules } from '../test/testRules.ts';
 import { activeTasksCount } from './counts.ts';
 import { advanceTime } from './engine.ts';
 import { boardWith, TestSession, type CardSetup } from './testing.ts';
 
-const SPAWN_US = balance.spawner.intervalUs;
-const { toDoLimit, boardLimit } = balance.spawner;
+const SPAWN_US = testRules.spawner.intervalUs;
+const { toDoLimit, boardLimit } = testRules.spawner;
 
 const created = (session: TestSession) =>
   session.events.filter((event) => event.type === 'cardCreated' && event.source === 'spawner');
@@ -81,7 +81,7 @@ describe('regular generator', () => {
   it('stops at BoardLimit even with room in To Do, counting finished and accepted cards but not Done', () => {
     const ready: CardSetup = { implementationDone: 10 };
     const accepted: CardSetup = { implementationDone: 10, review: { status: 'accepted' } };
-    const done = Array.from({ length: balance.done.maxCards }, (): CardSetup => ({ implementationDone: 10 }));
+    const done = Array.from({ length: testRules.done.maxCards }, (): CardSetup => ({ implementationDone: 10 }));
     const full = boardWith({
       todo: [{}],
       inProgress: [ready, ready, ready, {}],
@@ -91,7 +91,7 @@ describe('regular generator', () => {
     expect(activeTasksCount(full)).toBe(boardLimit);
     expect(full.columns.todo.length).toBeLessThan(toDoLimit);
     expect(full.timers.spawner).toEqual({ active: false, elapsedUs: 0 });
-    expect(advanceTime(full, SPAWN_US * 5).events.filter((event) => event.type === 'cardCreated')).toEqual([]);
+    expect(advanceTime(full, testRules, SPAWN_US * 5).events.filter((event) => event.type === 'cardCreated')).toEqual([]);
 
     const session = new TestSession(full);
     session.move(6, 'done');
@@ -103,7 +103,7 @@ describe('regular generator', () => {
   });
 
   it('starts when there is one free place under BoardLimit regardless of Done', () => {
-    const done = Array.from({ length: balance.done.maxCards }, (): CardSetup => ({ implementationDone: 10 }));
+    const done = Array.from({ length: testRules.done.maxCards }, (): CardSetup => ({ implementationDone: 10 }));
     const almostFull = boardWith({
       inProgress: Array.from({ length: boardLimit - 1 }, (): CardSetup => ({})),
       done,
@@ -119,7 +119,7 @@ describe('regular generator', () => {
       const state = boardWith({ todo: fullToDo, review: [reviewing] }, (draft) => {
         draft.rng = new TestSession(seed).state.rng;
       });
-      if (advanceTime(state, balance.review.durationUs).events.some((event) => event.type === 'reviewReturned')) {
+      if (advanceTime(state, testRules, testRules.review.durationUs).events.some((event) => event.type === 'reviewReturned')) {
         returnedSeed = seed;
       }
     }
@@ -130,7 +130,7 @@ describe('regular generator', () => {
         draft.rng = new TestSession(returnedSeed).state.rng;
       }),
     );
-    session.advance(balance.review.durationUs);
+    session.advance(testRules.review.durationUs);
     expect(session.state.columns.todo).toHaveLength(toDoLimit + 1);
     session.advance(SPAWN_US * 3);
     expect(session.state.columns.todo).toHaveLength(toDoLimit + 1);

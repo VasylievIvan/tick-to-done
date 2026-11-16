@@ -5,11 +5,12 @@ import { columnIds } from '../../core/state.ts';
 import { createInitialState } from '../../core/state.ts';
 import { renderGame } from '../../test/renderGame.tsx';
 import { JournalPanel } from './JournalPanel.tsx';
+import { testRules } from '../../test/testRules.ts';
 
 const actors = ['player', 'autoAssign', 'autoSubmit', 'autoComplete'] as const;
 
 function renderJournal(records: readonly JournalRecord[]) {
-  const { store } = renderGame(createInitialState(1), <JournalPanel />);
+  const { store } = renderGame(createInitialState(testRules, 1), <JournalPanel />);
   act(() => {
     store.setState({ journal: records.map((record, id) => ({ ...record, id })), journalWritten: records.length });
   });
@@ -23,7 +24,7 @@ const messages = () =>
 
 describe('journal panel', () => {
   it('is absent while the journal is empty', () => {
-    renderGame(createInitialState(1), <JournalPanel />);
+    renderGame(createInitialState(testRules, 1), <JournalPanel />);
     expect(screen.queryByRole('region', { name: 'Activity' })).toBeNull();
   });
 

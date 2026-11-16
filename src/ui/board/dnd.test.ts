@@ -4,10 +4,11 @@ import { applyCommand } from '../../core/engine.ts';
 import { createCard, createInitialState, type GameState } from '../../core/state.ts';
 import { boardWith } from '../../core/testing.ts';
 import { dropCommand, insertionIndex, isDropAllowed } from './dnd.ts';
+import { testRules } from '../../test/testRules.ts';
 
 function board(): GameState {
-  return produce(createInitialState(1), (draft) => {
-    for (const number of [2, 3, 4]) draft.cards[number] = createCard(number, 10, null);
+  return produce(createInitialState(testRules, 1), (draft) => {
+    for (const number of [2, 3, 4]) draft.cards[number] = createCard(testRules, number, 10, null);
     draft.columns.todo = [1, 2];
     draft.columns.inProgress = [3, 4];
     draft.nextCardNumber = 5;
@@ -57,9 +58,9 @@ describe('drop adapter', () => {
 
   it('lets the core cancel a drop when the card left its origin during the gesture', () => {
     const state = board();
-    const moved = applyCommand(state, { type: 'moveCard', card: 1, from: 'todo', to: 'inProgress', index: 0 }).state;
+    const moved = applyCommand(state, testRules, { type: 'moveCard', card: 1, from: 'todo', to: 'inProgress', index: 0 }).state;
     const command = dropCommand(moved, { card: 1, column: 'todo' }, { kind: 'card', card: 2, placeBelow: true });
     expect(command).not.toBeNull();
-    if (command) expect(applyCommand(moved, command).accepted).toBe(false);
+    if (command) expect(applyCommand(moved, testRules, command).accepted).toBe(false);
   });
 });

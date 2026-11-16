@@ -1,5 +1,4 @@
 import { produce, type Draft } from 'immer';
-import { balance, type UpgradeId } from '../config/balance.ts';
 import {
   canMoveCard,
   canReorderCard,
@@ -13,6 +12,7 @@ import { aiTick, autoAssign, autoComplete, autoSubmit } from './automation.ts';
 import { canBuyUpgrade, purchaseUpgrade } from './economy.ts';
 import type { GameEvent } from './events.ts';
 import { resolveReview } from './review.ts';
+import type { Rules, UpgradeId } from './rules.ts';
 import { clickPower } from './selectors.ts';
 import { spawnRegularTask } from './spawner.ts';
 import { timerIds, type CardId, type ColumnId, type GameState, type TimerId } from './state.ts';
@@ -41,7 +41,7 @@ export interface CommandResult extends StepResult {
 }
 
 /** The same rule the interface asks before offering an action, so a highlight and its outcome never disagree. */
-export function isCommandAllowed(state: GameState, command: Command): boolean {
+export function isCommandAllowed(state: GameState, rules: Rules, command: Command): boolean {
   switch (command.type) {
     case 'moveCard':
       return canMoveCard(state, command.card, command.from, command.to);
@@ -50,50 +50,50 @@ export function isCommandAllowed(state: GameState, command: Command): boolean {
     case 'work':
       return canWork(state, command.card);
     case 'buyUpgrade':
-      return canBuyUpgrade(state, command.upgrade);
+      return canBuyUpgrade(state, rules, command.upgrade);
   }
 }
 
-function execute(draft: Draft<GameState>, command: Command, events: GameEvent[]): void {
+function execute(draft: Draft<GameState>, rules: Rules, command: Command, events: GameEvent[]): void {
   switch (command.type) {
     case 'moveCard':
-      moveCardTo(draft, command.card, command.from, command.to, command.index, 'player', events);
+      moveCardTo(draft, rules, command.card, command.from, command.to, command.index, 'player', events);
       return;
     case 'reorderCard':
       reorderCard(draft, command.card, command.column, command.index);
       return;
     case 'work':
-      workOnCard(draft, requireDraftCard(draft, command.card), clickPower(draft), events);
+      workOnCard(draft, requireDraftCard(draft, command.card), clickPower(draft, rules), events);
       return;
     case 'buyUpgrade': {
-      const aiIntervalBeforeUs = timerIntervalUs(draft, 'aiDeveloper');
-      purchaseUpgrade(draft, command.upgrade, events);
-      preserveTimerShare(draft, 'aiDeveloper', aiIntervalBeforeUs);
+      const aiIntervalBeforeUs = timerIntervalUs(draft, rules, 'aiDeveloper');
+      purchaseUpgrade(draft, rules, command.upgrade, events);
+      preserveTimerShare(draft, rules, 'aiDeveloper', aiIntervalBeforeUs);
       return;
     }
   }
 }
 
 /** An invalid command is rejected without changing the state and without throwing. */
-export function applyCommand(state: GameState, command: Command): CommandResult {
-  if (!isCommandAllowed(state, command)) return { state, events: [], accepted: false };
+export function applyCommand(state: GameState, rules: Rules, command: Command): CommandResult {
+  if (!isCommandAllowed(state, rules, command)) return { state, events: [], accepted: false };
   const events: GameEvent[] = [];
   const next = produce(state, (draft) => {
-    execute(draft, command, events);
-    reconcileTimers(draft);
+    execute(draft, rules, command, events);
+    reconcileTimers(draft, rules);
   });
   return { state: next, events, accepted: true };
 }
 
-function timeToNextFiring(state: GameState): number {
+function timeToNextFiring(state: GameState, rules: Rules): number {
   let next = Number.POSITIVE_INFINITY;
   for (const id of state.columns.review) {
     const review = state.cards[id]?.review;
-    if (review?.status === 'running') next = Math.min(next, balance.review.durationUs - review.elapsedUs);
+    if (review?.status === 'running') next = Math.min(next, rules.review.durationUs - review.elapsedUs);
   }
   for (const id of timerIds) {
     const timer = state.timers[id];
-    if (timer.active) next = Math.min(next, timerIntervalUs(state, id) - timer.elapsedUs);
+    if (timer.active) next = Math.min(next, timerIntervalUs(state, rules, id) - timer.elapsedUs);
   }
   return next;
 }
@@ -110,39 +110,39 @@ function elapse(draft: Draft<GameState>, deltaUs: number): void {
   }
 }
 
-function findDueReview(state: GameState): CardId | undefined {
+function findDueReview(state: GameState, rules: Rules): CardId | undefined {
   return state.columns.review.find((id) => {
     const review = state.cards[id]?.review;
-    return review?.status === 'running' && review.elapsedUs >= balance.review.durationUs;
+    return review?.status === 'running' && review.elapsedUs >= rules.review.durationUs;
   });
 }
 
 const timerFiringOrder: readonly TimerId[] = ['autoComplete', 'autoSubmit', 'aiDeveloper', 'autoAssign', 'spawner'];
 
-function findDueTimer(state: GameState): TimerId | undefined {
+function findDueTimer(state: GameState, rules: Rules): TimerId | undefined {
   return timerFiringOrder.find((id) => {
     const timer = state.timers[id];
-    return timer.active && timer.elapsedUs >= timerIntervalUs(state, id);
+    return timer.active && timer.elapsedUs >= timerIntervalUs(state, rules, id);
   });
 }
 
-function fireTimer(draft: Draft<GameState>, timer: TimerId, events: GameEvent[]): void {
+function fireTimer(draft: Draft<GameState>, rules: Rules, timer: TimerId, events: GameEvent[]): void {
   draft.timers[timer].elapsedUs = 0;
   switch (timer) {
     case 'spawner':
-      spawnRegularTask(draft, events);
+      spawnRegularTask(draft, rules, events);
       return;
     case 'aiDeveloper':
-      aiTick(draft, events);
+      aiTick(draft, rules, events);
       return;
     case 'autoAssign':
-      autoAssign(draft, events);
+      autoAssign(draft, rules, events);
       return;
     case 'autoSubmit':
-      autoSubmit(draft, events);
+      autoSubmit(draft, rules, events);
       return;
     case 'autoComplete':
-      autoComplete(draft, events);
+      autoComplete(draft, rules, events);
       return;
   }
 }
@@ -152,17 +152,17 @@ function fireTimer(draft: Draft<GameState>, timer: TimerId, events: GameEvent[])
  * then Auto Complete, Auto Submit, the AI tick, Auto Assign and the generator. Every firing is followed by the
  * timer rule, so a firing can start or stop the timers after it.
  */
-function fireDue(draft: Draft<GameState>, events: GameEvent[]): void {
+function fireDue(draft: Draft<GameState>, rules: Rules, events: GameEvent[]): void {
   for (;;) {
-    const review = findDueReview(draft);
+    const review = findDueReview(draft, rules);
     if (review !== undefined) {
-      resolveReview(draft, review, events);
+      resolveReview(draft, rules, review, events);
     } else {
-      const timer = findDueTimer(draft);
+      const timer = findDueTimer(draft, rules);
       if (timer === undefined) return;
-      fireTimer(draft, timer, events);
+      fireTimer(draft, rules, timer, events);
     }
-    reconcileTimers(draft);
+    reconcileTimers(draft, rules);
   }
 }
 
@@ -170,7 +170,7 @@ function fireDue(draft: Draft<GameState>, events: GameEvent[]): void {
  * Advances from firing to firing rather than by fixed steps, so the result does not depend on how the time is
  * sliced into frames.
  */
-export function advanceTime(state: GameState, deltaUs: number): StepResult {
+export function advanceTime(state: GameState, rules: Rules, deltaUs: number): StepResult {
   if (!Number.isSafeInteger(deltaUs) || deltaUs < 0) {
     throw new RangeError(`Time can only advance by a whole non-negative number of microseconds, got ${deltaUs}`);
   }
@@ -180,14 +180,14 @@ export function advanceTime(state: GameState, deltaUs: number): StepResult {
   const next = produce(state, (draft) => {
     let remainingUs = deltaUs;
     for (;;) {
-      const untilNextUs = timeToNextFiring(draft);
+      const untilNextUs = timeToNextFiring(draft, rules);
       if (untilNextUs > remainingUs) {
         elapse(draft, remainingUs);
         return;
       }
       elapse(draft, untilNextUs);
       remainingUs -= untilNextUs;
-      fireDue(draft, events);
+      fireDue(draft, rules, events);
     }
   });
   return { state: next, events };

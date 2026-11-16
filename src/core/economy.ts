@@ -1,6 +1,13 @@
 import type { Draft } from 'immer';
-import { balance, type Fraction, type RepeatableUpgradeId, type UpgradeId, upgradeIds } from '../config/balance.ts';
 import type { EventSink, MoveActor } from './events.ts';
+import {
+  repeatableUpgradeIds,
+  type Fraction,
+  type RepeatableUpgradeId,
+  type Rules,
+  type UpgradeId,
+  upgradeIds,
+} from './rules.ts';
 import type { Card, GameState } from './state.ts';
 
 const scaledCache = new Map<string, number>();
@@ -23,67 +30,67 @@ function exactScaleByPower(value: number, ratio: Fraction, exponent: number, rou
 }
 
 export function isRepeatableUpgrade(id: UpgradeId): id is RepeatableUpgradeId {
-  return balance.upgrades[id].kind === 'repeatable';
+  return (repeatableUpgradeIds as readonly UpgradeId[]).includes(id);
 }
 
-export function taskReward(originalComplexity: number): number {
-  return originalComplexity * balance.rewardMultiplier;
+export function taskReward(rules: Rules, originalComplexity: number): number {
+  return originalComplexity * rules.rewardMultiplier;
 }
 
 /** `NextCost = ceil(BaseCost × GrowthFactor ^ PurchasedLevels)`; one-time upgrades always cost their base price. */
-export function upgradeCost(id: UpgradeId, purchasedLevels: number): number {
-  const definition = balance.upgrades[id];
-  if (definition.kind === 'oneTime') return definition.baseCost;
+export function upgradeCost(rules: Rules, id: UpgradeId, purchasedLevels: number): number {
+  if (!isRepeatableUpgrade(id)) return rules.upgrades[id].baseCost;
+  const definition = rules.upgrades[id];
   return scaleByPower(definition.baseCost, definition.costGrowth, purchasedLevels, 'ceil');
 }
 
-export function clickPowerAt(keyboardLevels: number): number {
-  return balance.clickPower.base + keyboardLevels * balance.clickPower.perKeyboardLevel;
+export function clickPowerAt(rules: Rules, keyboardLevels: number): number {
+  return rules.clickPower.base + keyboardLevels * rules.clickPower.perKeyboardLevel;
 }
 
-export function aiWorkPowerAt(workPowerLevels: number): number {
-  return balance.ai.baseWorkPower + workPowerLevels * balance.ai.workPowerPerLevel;
+export function aiWorkPowerAt(rules: Rules, workPowerLevels: number): number {
+  return rules.ai.baseWorkPower + workPowerLevels * rules.ai.workPowerPerLevel;
 }
 
-export function parallelTasksAt(parallelLevels: number): number {
-  return balance.ai.baseParallelTasks + parallelLevels * balance.ai.parallelTasksPerLevel;
+export function parallelTasksAt(rules: Rules, parallelLevels: number): number {
+  return rules.ai.baseParallelTasks + parallelLevels * rules.ai.parallelTasksPerLevel;
 }
 
 /** `AITickInterval = max(0.25 s, 1 s × 0.8 ^ TickSpeedLevels)`, in whole microseconds. */
-export function aiTickIntervalUsAt(tickSpeedLevels: number): number {
+export function aiTickIntervalUsAt(rules: Rules, tickSpeedLevels: number): number {
   const scaled = scaleByPower(
-    balance.ai.baseTickIntervalUs,
-    balance.ai.tickIntervalFactorPerLevel,
+    rules.ai.baseTickIntervalUs,
+    rules.ai.tickIntervalFactorPerLevel,
     tickSpeedLevels,
     'floor',
   );
-  return Math.max(balance.ai.minTickIntervalUs, scaled);
+  return Math.max(rules.ai.minTickIntervalUs, scaled);
 }
 
 /** Further AI Tick Speed purchases have no effect once the interval sits at its minimum. */
-export function isAiTickSpeedMaxedAt(tickSpeedLevels: number): boolean {
-  return aiTickIntervalUsAt(tickSpeedLevels) <= balance.ai.minTickIntervalUs;
+export function isAiTickSpeedMaxedAt(rules: Rules, tickSpeedLevels: number): boolean {
+  return aiTickIntervalUsAt(rules, tickSpeedLevels) <= rules.ai.minTickIntervalUs;
 }
 
-export function isDiscoveryThresholdReached(credits: number, baseCost: number): boolean {
-  const { numerator, denominator } = balance.discoveryThreshold;
+export function isDiscoveryThresholdReached(rules: Rules, credits: number, baseCost: number): boolean {
+  const { numerator, denominator } = rules.discoveryThreshold;
   return credits * denominator >= baseCost * numerator;
 }
 
-export function payReward(draft: Draft<GameState>, card: Card, by: MoveActor, events: EventSink): void {
-  const reward = taskReward(card.originalComplexity);
+export function payReward(draft: Draft<GameState>, rules: Rules, card: Card, by: MoveActor, events: EventSink): void {
+  const reward = taskReward(rules, card.originalComplexity);
   draft.economy.credits += reward;
   draft.economy.completedTasks += 1;
   draft.economy.totalEarned += reward;
   events.push({ type: 'taskCompleted', card: card.number, reward, by });
-  recordDiscoveries(draft, events);
+  recordDiscoveries(draft, rules, events);
 }
 
 /** A reached threshold is remembered: later spending never hides an upgrade again. */
-export function recordDiscoveries(draft: Draft<GameState>, events: EventSink): void {
+export function recordDiscoveries(draft: Draft<GameState>, rules: Rules, events: EventSink): void {
   for (const id of upgradeIds) {
     if (draft.upgrades.discovered[id]) continue;
-    if (!isDiscoveryThresholdReached(draft.economy.credits, balance.upgrades[id].baseCost)) continue;
+    if (!isDiscoveryThresholdReached(rules, draft.economy.credits, rules.upgrades[id].baseCost)) continue;
     draft.upgrades.discovered[id] = true;
     events.push({ type: 'upgradeDiscovered', upgrade: id });
   }
@@ -95,31 +102,31 @@ export function upgradeLevel(state: GameState, id: UpgradeId): number {
 }
 
 /** Visible: the shop is open, the 50% threshold was ever reached, and AI upgrades also need AI Developer. */
-export function isUpgradeVisible(state: GameState, id: UpgradeId): boolean {
+export function isUpgradeVisible(state: GameState, rules: Rules, id: UpgradeId): boolean {
   if (!state.scenario.revealed.shop || !state.upgrades.discovered[id]) return false;
-  return !balance.upgrades[id].requiresAiDeveloper || state.upgrades.owned.aiDeveloper;
+  return !rules.upgrades[id].requiresAiDeveloper || state.upgrades.owned.aiDeveloper;
 }
 
 /** A bought one-time upgrade and AI Tick Speed at its minimum interval stay in the shop but cannot be bought. */
-export function isUpgradeExhausted(state: GameState, id: UpgradeId): boolean {
-  if (id === 'aiTickSpeed') return isAiTickSpeedMaxedAt(state.upgrades.levels.aiTickSpeed);
+export function isUpgradeExhausted(state: GameState, rules: Rules, id: UpgradeId): boolean {
+  if (id === 'aiTickSpeed') return isAiTickSpeedMaxedAt(rules, state.upgrades.levels.aiTickSpeed);
   return !isRepeatableUpgrade(id) && state.upgrades.owned[id];
 }
 
-export function currentUpgradeCost(state: GameState, id: UpgradeId): number {
-  return upgradeCost(id, upgradeLevel(state, id));
+export function currentUpgradeCost(state: GameState, rules: Rules, id: UpgradeId): number {
+  return upgradeCost(rules, id, upgradeLevel(state, id));
 }
 
-export function canBuyUpgrade(state: GameState, id: UpgradeId): boolean {
+export function canBuyUpgrade(state: GameState, rules: Rules, id: UpgradeId): boolean {
   return (
-    isUpgradeVisible(state, id) &&
-    !isUpgradeExhausted(state, id) &&
-    state.economy.credits >= currentUpgradeCost(state, id)
+    isUpgradeVisible(state, rules, id) &&
+    !isUpgradeExhausted(state, rules, id) &&
+    state.economy.credits >= currentUpgradeCost(state, rules, id)
   );
 }
 
-export function purchaseUpgrade(draft: Draft<GameState>, id: UpgradeId, events: EventSink): void {
-  const cost = currentUpgradeCost(draft, id);
+export function purchaseUpgrade(draft: Draft<GameState>, rules: Rules, id: UpgradeId, events: EventSink): void {
+  const cost = currentUpgradeCost(draft, rules, id);
   draft.economy.credits -= cost;
   if (isRepeatableUpgrade(id)) draft.upgrades.levels[id] += 1;
   else draft.upgrades.owned[id] = true;

@@ -1,6 +1,7 @@
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { balance, type OneTimeUpgradeId } from '../../config/balance.ts';
+import { balance } from '../../config/balance.ts';
+import type { OneTimeUpgradeId } from '../../core/rules.ts';
 import { columnIds, timerIds } from '../../core/state.ts';
 import {
   purchaseStrategies,
@@ -94,7 +95,7 @@ function section(strategy: PurchaseStrategy, results: readonly SimulationResult[
 
 const sections = purchaseStrategies.map((strategy) => {
   const results = Array.from({ length: SEEDS }, (_, index) =>
-    simulate({ seed: index + 1, strategy, player, limitSeconds: 90 * 60, observeSecondsAfterFullAutomation: 5 * 60 }),
+    simulate({ rules: balance, seed: index + 1, strategy, player, limitSeconds: 90 * 60, observeSecondsAfterFullAutomation: 5 * 60 }),
   );
   return section(strategy, results);
 });

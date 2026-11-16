@@ -1,10 +1,11 @@
 import { produce } from 'immer';
-import { balance, upgradeIds } from '../config/balance.ts';
+import { upgradeIds } from '../core/rules.ts';
 import { createCard, createInitialState, type Card, type GameState } from '../core/state.ts';
+import { testRules } from './testRules.ts';
 
 /** A board with every card state and every revealed element, for screen-wide rendering tests. */
 export function showcaseState(): GameState {
-  return produce(createInitialState(1), (draft) => {
+  return produce(createInitialState(testRules, 1), (draft) => {
     const cards: [Card['number'], Partial<Card>, 'todo' | 'inProgress' | 'review' | 'done'][] = [
       [10, {}, 'todo'],
       [11, { implementationDone: 20, reworkRequired: 6, reworkDone: 0, returnCount: 1 }, 'todo'],
@@ -18,7 +19,7 @@ export function showcaseState(): GameState {
     draft.cards = {};
     draft.columns = { todo: [], inProgress: [], review: [], done: [] };
     for (const [number, overrides, column] of cards) {
-      draft.cards[number] = { ...createCard(number, 20, null), ...overrides };
+      draft.cards[number] = { ...createCard(testRules, number, 20, null), ...overrides };
       draft.columns[column].push(number);
     }
     draft.nextCardNumber = 18;
@@ -28,7 +29,7 @@ export function showcaseState(): GameState {
     draft.upgrades.levels.betterKeyboard = 2;
     draft.upgrades.levels.aiTickSpeed = 7;
     draft.scenario = {
-      scriptedTasksIssued: balance.scenarioTasks.length,
+      scriptedTasksIssued: testRules.scenarioTasks.length,
       revealed: { codeReview: true, done: true, balance: true, shop: true },
       spawnerEnabled: true,
     };

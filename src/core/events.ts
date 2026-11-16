@@ -1,4 +1,4 @@
-import type { UpgradeId } from '../config/balance.ts';
+import type { UpgradeId } from './rules.ts';
 import type { CardId, ColumnId, RevealableElement } from './state.ts';
 
 export type MoveActor = 'player' | 'autoAssign' | 'autoSubmit' | 'autoComplete';

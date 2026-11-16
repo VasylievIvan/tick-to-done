@@ -1,7 +1,7 @@
 import { fireEvent, screen, within } from '@testing-library/react';
 import { produce } from 'immer';
 import { describe, expect, it } from 'vitest';
-import { upgradeIds } from '../../config/balance.ts';
+import { upgradeIds } from '../../core/rules.ts';
 import { TestSession } from '../../core/testing.ts';
 import { renderGame } from '../../test/renderGame.tsx';
 import { Shop } from './Shop.tsx';

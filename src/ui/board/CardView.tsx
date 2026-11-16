@@ -1,8 +1,8 @@
 import type { PointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { balance } from '../../config/balance.ts';
 import { isUnfinished } from '../../core/selectors.ts';
 import type { Card, ColumnId } from '../../core/state.ts';
+import { useRules } from '../GameContext.tsx';
 import { useTaskLabel } from '../useTaskLabel.ts';
 import styles from './CardView.module.css';
 import { ProgressBar } from './ProgressBar.tsx';
@@ -22,6 +22,7 @@ function stopDragStart(event: PointerEvent) {
 export function CardView({ card, column, onWork, draggable = false, overlay = false }: CardViewProps) {
   const { t } = useTranslation();
   const taskLabel = useTaskLabel();
+  const rules = useRules();
   const returned = card.returnCount > 0 && column !== 'done';
   const showWork = column === 'inProgress' || (column === 'todo' && returned);
   const className = [styles.card, draggable && styles.draggable, overlay && styles.overlay].filter(Boolean).join(' ');
@@ -56,7 +57,7 @@ export function CardView({ card, column, onWork, draggable = false, overlay = fa
         <ProgressBar
           label={t('card.inReview')}
           value={card.review.elapsedUs}
-          max={balance.review.durationUs}
+          max={rules.review.durationUs}
           tone="review"
         />
       )}

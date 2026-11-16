@@ -34,6 +34,18 @@ describe('lint guards', () => {
     expect(fromReact).toContain('no-restricted-imports');
   });
 
+  it('rejects a core import of the balance or any other config module', async () => {
+    const balance = await ruleIdsFor('src/core/guard-sample.ts', "export { balance } from '../config/balance.ts';\n");
+    const technical = await ruleIdsFor('src/core/guard-sample.ts', "export { technical } from '../config/technical.ts';\n");
+    expect(balance).toContain('no-restricted-imports');
+    expect(technical).toContain('no-restricted-imports');
+  });
+
+  it('rejects a UI import of the balance', async () => {
+    const ids = await ruleIdsFor('src/ui/GuardSample.tsx', "export { balance } from '../config/balance.ts';\n");
+    expect(ids).toContain('no-restricted-imports');
+  });
+
   it('rejects Math.random, Date and timers in the core', async () => {
     const random = await ruleIdsFor('src/core/guard-sample.ts', 'export const roll = (): number => Math.random();\n');
     const clock = await ruleIdsFor('src/core/guard-sample.ts', 'export const now = (): number => Date.now();\n');

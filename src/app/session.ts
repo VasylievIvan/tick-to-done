@@ -1,3 +1,4 @@
+import type { Rules } from '../core/rules.ts';
 import { createInitialState } from '../core/state.ts';
 import { browserFrames, browserVisibility, startTimeDriver } from './driver.ts';
 import { createGameStore, type GameStore } from './store.ts';
@@ -37,8 +38,8 @@ export interface GameSession {
   readonly start: () => () => void;
 }
 
-export function createGameSession(options: SessionOptions): GameSession {
-  const store = createGameStore(createInitialState(options.seed));
+export function createGameSession(rules: Rules, options: SessionOptions): GameSession {
+  const store = createGameStore(rules, createInitialState(rules, options.seed));
   if (import.meta.env.DEV) exposeForDevelopment(store, options);
   return {
     store,

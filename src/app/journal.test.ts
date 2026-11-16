@@ -5,6 +5,7 @@ import { TestSession } from '../core/testing.ts';
 import { createInitialState } from '../core/state.ts';
 import { appendToJournal, toJournalRecords, type JournalRecord } from './journal.ts';
 import { createGameStore } from './store.ts';
+import { testRules } from '../test/testRules.ts';
 
 describe('journal projection', () => {
   it('keeps moves, Review results, returns with their rework and completions with the actor', () => {
@@ -55,7 +56,7 @@ describe('journal projection', () => {
 
 describe('store journal', () => {
   it('fills from player commands and from time', () => {
-    const store = createGameStore(createInitialState(1));
+    const store = createGameStore(testRules, createInitialState(testRules, 1));
     const { dispatch } = store.getState();
     dispatch({ type: 'moveCard', card: 1, from: 'todo', to: 'inProgress', index: 0 });
     for (let click = 0; click < 10; click += 1) dispatch({ type: 'work', card: 1 });
@@ -72,7 +73,7 @@ describe('store journal', () => {
 
   it('caps the journal at the technical limit during a long automatic run', () => {
     const session = new TestSession(1).completeScriptedTasks();
-    const store = createGameStore(session.state);
+    const store = createGameStore(testRules, session.state);
     store.setState({
       game: {
         ...store.getState().game,

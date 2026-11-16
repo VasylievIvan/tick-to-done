@@ -1,8 +1,8 @@
 import type { Draft } from 'immer';
-import { balance } from '../config/balance.ts';
 import { applyWork, isImplementationComplete, isUnfinished } from './cards.ts';
 import { payReward } from './economy.ts';
 import type { EventSink, MoveActor } from './events.ts';
+import type { Rules } from './rules.ts';
 import { advanceScenarioAfterCompletion, reveal } from './scenario.ts';
 import { columnIds, type Card, type CardId, type ColumnId, type GameState } from './state.ts';
 
@@ -84,6 +84,7 @@ export function reorderCard(draft: Draft<GameState>, id: CardId, column: ColumnI
  */
 export function moveCardTo(
   draft: Draft<GameState>,
+  rules: Rules,
   id: CardId,
   from: ColumnId,
   to: ColumnId,
@@ -100,21 +101,21 @@ export function moveCardTo(
 
   const card = requireDraftCard(draft, id);
   if (to === 'review') card.review = { status: 'running', elapsedUs: 0 };
-  if (to === 'done') completeTask(draft, card, by, events);
+  if (to === 'done') completeTask(draft, rules, card, by, events);
 }
 
-function completeTask(draft: Draft<GameState>, card: Draft<Card>, by: MoveActor, events: EventSink): void {
+function completeTask(draft: Draft<GameState>, rules: Rules, card: Draft<Card>, by: MoveActor, events: EventSink): void {
   card.review = { status: 'none' };
   card.doneAtUs = draft.timeUs;
-  payReward(draft, card, by, events);
+  payReward(draft, rules, card, by, events);
   reveal(draft, 'balance', events);
-  trimDone(draft, events);
-  advanceScenarioAfterCompletion(draft, events);
+  trimDone(draft, rules, events);
+  advanceScenarioAfterCompletion(draft, rules, events);
 }
 
 /** Done keeps the newest `DoneMaxCards` cards; the oldest simply disappears without touching Credits or stats. */
-function trimDone(draft: Draft<GameState>, events: EventSink): void {
-  while (draft.columns.done.length > balance.done.maxCards) {
+function trimDone(draft: Draft<GameState>, rules: Rules, events: EventSink): void {
+  while (draft.columns.done.length > rules.done.maxCards) {
     const oldest = draft.columns.done.pop();
     if (oldest === undefined) return;
     Reflect.deleteProperty(draft.cards, oldest);

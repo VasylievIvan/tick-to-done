@@ -1,16 +1,17 @@
 import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { createCard, type Card, type ColumnId } from '../../core/state.ts';
-import { renderWithI18n } from '../../test/renderGame.tsx';
+import { createCard, createInitialState, type Card, type ColumnId } from '../../core/state.ts';
+import { renderGame } from '../../test/renderGame.tsx';
+import { testRules } from '../../test/testRules.ts';
 import { CardView } from './CardView.tsx';
 
 function card(overrides: Partial<Card> & { complexity?: number; number?: number } = {}): Card {
   const { complexity = 10, number = 1, ...rest } = overrides;
-  return { ...createCard(number, complexity, null), ...rest };
+  return { ...createCard(testRules, number, complexity, null), ...rest };
 }
 
 function renderCard(value: Card, column: ColumnId) {
-  const { container } = renderWithI18n(<CardView card={value} column={column} />);
+  const { container } = renderGame(createInitialState(testRules, 1), <CardView card={value} column={column} />);
   const element = container.querySelector('article');
   if (!element) throw new Error('card not rendered');
   return element;
@@ -85,7 +86,8 @@ describe('card view', () => {
   });
 
   it('keeps at least four digits in the number and grows past 9999', () => {
-    renderWithI18n(
+    renderGame(
+      createInitialState(testRules, 1),
       <>
         <CardView card={card({ number: 21 })} column="todo" />
         <CardView card={card({ number: 10000 })} column="todo" />

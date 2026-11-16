@@ -1,14 +1,14 @@
+import { isDiscoveryThresholdReached } from './economy.ts';
+import { createRngState, type RngState } from './rng.ts';
 import {
-  balance,
   type OneTimeUpgradeId,
   type RepeatableUpgradeId,
+  type Rules,
   type ScriptedReviewOutcome,
   type TaskTitleKey,
   type UpgradeId,
   upgradeIds,
-} from '../config/balance.ts';
-import { isDiscoveryThresholdReached } from './economy.ts';
-import { createRngState, type RngState } from './rng.ts';
+} from './rules.ts';
 
 export const columnIds = ['todo', 'inProgress', 'review', 'done'] as const;
 export type ColumnId = (typeof columnIds)[number];
@@ -81,13 +81,14 @@ export interface GameState {
 }
 
 export function createCard(
+  rules: Rules,
   number: CardId,
   originalComplexity: number,
   scriptedReview: ScriptedReviewOutcome | null,
 ): Card {
   return {
     number,
-    titleKey: balance.taskTitleKey,
+    titleKey: rules.taskTitleKey,
     originalComplexity,
     implementationDone: 0,
     reworkRequired: 0,
@@ -101,14 +102,14 @@ export function createCard(
 
 const idleTimer: TimerState = { active: false, elapsedUs: 0 };
 
-function discoveryAt(credits: number): Record<UpgradeId, boolean> {
-  const entries = upgradeIds.map((id) => [id, isDiscoveryThresholdReached(credits, balance.upgrades[id].baseCost)]);
+function discoveryAt(rules: Rules, credits: number): Record<UpgradeId, boolean> {
+  const entries = upgradeIds.map((id) => [id, isDiscoveryThresholdReached(rules, credits, rules.upgrades[id].baseCost)]);
   return Object.fromEntries(entries) as Record<UpgradeId, boolean>;
 }
 
-export function createInitialState(seed: number): GameState {
-  const [firstTask] = balance.scenarioTasks;
-  const firstCard = createCard(1, firstTask.complexity, firstTask.firstReview);
+export function createInitialState(rules: Rules, seed: number): GameState {
+  const [firstTask] = rules.scenarioTasks;
+  const firstCard = createCard(rules, 1, firstTask.complexity, firstTask.firstReview);
 
   return {
     timeUs: 0,
@@ -116,11 +117,11 @@ export function createInitialState(seed: number): GameState {
     cards: { [firstCard.number]: firstCard },
     columns: { todo: [firstCard.number], inProgress: [], review: [], done: [] },
     nextCardNumber: firstCard.number + 1,
-    economy: { credits: balance.initialCredits, completedTasks: 0, returnedReviews: 0, totalEarned: 0 },
+    economy: { credits: rules.initialCredits, completedTasks: 0, returnedReviews: 0, totalEarned: 0 },
     upgrades: {
       levels: { betterKeyboard: 0, aiWorkPower: 0, aiTickSpeed: 0, parallelProcessing: 0 },
       owned: { aiDeveloper: false, autoAssign: false, autoSubmit: false, autoComplete: false },
-      discovered: discoveryAt(balance.initialCredits),
+      discovered: discoveryAt(rules, rules.initialCredits),
     },
     timers: {
       aiDeveloper: idleTimer,

@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import { MICROSECONDS_PER_SECOND } from '../../config/balance.ts';
 import { aiTickIntervalUs, aiWorkPower, parallelTasks, timerProgress } from '../../core/selectors.ts';
+import { MICROSECONDS_PER_SECOND } from '../../core/rules.ts';
 import type { TimerId } from '../../core/state.ts';
 import { useGame, useGameList } from '../GameContext.tsx';
 import panel from '../Panel.module.css';
@@ -22,7 +22,7 @@ function AiDetails() {
 
 function AutomationRow({ id }: { id: AutomationId }) {
   const { t } = useTranslation();
-  const progress = useGame((game) => timerProgress(game, id));
+  const progress = useGame((game, rules) => timerProgress(game, rules, id));
   const active = useGame((game) => game.timers[id].active);
   const name = t(`shop.upgrade.${id}.name`);
   return (

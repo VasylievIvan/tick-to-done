@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { upgradeIds } from '../config/balance.ts';
+import { upgradeIds } from './rules.ts';
+import { testRules } from '../test/testRules.ts';
 import { createInitialState, timerIds } from './state.ts';
 
 describe('initial state', () => {
-  const state = createInitialState(1);
+  const state = createInitialState(testRules, 1);
 
   it('has a single Task 0001 of complexity 10 in To Do', () => {
     expect(state.columns).toEqual({ todo: [1], inProgress: [], review: [], done: [] });
@@ -46,7 +47,7 @@ describe('initial state', () => {
   });
 
   it('derives the RNG state from the seed', () => {
-    expect(createInitialState(1).rng).toEqual(state.rng);
-    expect(createInitialState(2).rng).not.toEqual(state.rng);
+    expect(createInitialState(testRules, 1).rng).toEqual(state.rng);
+    expect(createInitialState(testRules, 2).rng).not.toEqual(state.rng);
   });
 });

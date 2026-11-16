@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { balance, upgradeIds } from '../../src/config/balance.ts';
+import { taskTitleKeys, upgradeIds } from '../../src/core/rules.ts';
 import { columnIds } from '../../src/core/state.ts';
 import { i18n } from '../../src/i18n/index.ts';
 import { en } from '../../src/i18n/locales/en.ts';
@@ -44,7 +44,7 @@ describe('dictionary', () => {
       expect(baseKeys.has(`shop.upgrade.${id}.name`), id).toBe(true);
       expect(baseKeys.has(`shop.upgrade.${id}.effect`), id).toBe(true);
     }
-    expect(baseKeys.has(`card.title.${balance.taskTitleKey}`)).toBe(true);
+    for (const key of taskTitleKeys) expect(baseKeys.has(`card.title.${key}`), key).toBe(true);
   });
 
   it('has a template for every journal record kind and every actor', () => {

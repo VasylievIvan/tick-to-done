@@ -1,4 +1,4 @@
-import type { Fraction } from '../config/balance.ts';
+import type { Fraction } from './rules.ts';
 
 /**
  * Independent streams: changing how one kind of value is drawn never shifts the others for the same seed.

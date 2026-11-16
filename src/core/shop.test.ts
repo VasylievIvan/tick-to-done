@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { balance, upgradeIds, type UpgradeId } from '../config/balance.ts';
+import { upgradeIds, type UpgradeId } from './rules.ts';
+import { testRules } from '../test/testRules.ts';
 import { isDiscoveryThresholdReached } from './economy.ts';
 import { applyCommand } from './engine.ts';
 import { canBuyUpgrade, clickPower, currentUpgradeCost, upgradeLevel, visibleUpgrades } from './selectors.ts';
@@ -12,7 +13,7 @@ function shopWithCredits(credits: number) {
     boardWith({}, (draft) => {
       draft.economy.credits = credits;
       for (const id of upgradeIds) {
-        draft.upgrades.discovered[id] = isDiscoveryThresholdReached(credits, balance.upgrades[id].baseCost);
+        draft.upgrades.discovered[id] = isDiscoveryThresholdReached(testRules, credits, testRules.upgrades[id].baseCost);
       }
     }),
   );
@@ -22,13 +23,13 @@ describe('shop discovery', () => {
   it('shows Better Keyboard, AI Developer and Auto Assign when the shop opens with 90 Credits', () => {
     const session = new TestSession(1).completeScriptedTasks();
     expect(session.state.economy.credits).toBe(90);
-    expect(visibleUpgrades(session.state)).toEqual(['betterKeyboard', 'aiDeveloper', 'autoAssign']);
+    expect(visibleUpgrades(session.state, testRules)).toEqual(['betterKeyboard', 'aiDeveloper', 'autoAssign']);
   });
 
   it('keeps AI Work Power hidden although its threshold is reached, until AI Developer is bought', () => {
     const session = new TestSession(1).completeScriptedTasks();
     expect(session.state.upgrades.discovered.aiWorkPower).toBe(true);
-    expect(visibleUpgrades(session.state)).not.toContain('aiWorkPower');
+    expect(visibleUpgrades(session.state, testRules)).not.toContain('aiWorkPower');
     expect(buy(session, 'aiWorkPower')).toBe(false);
   });
 
@@ -37,7 +38,7 @@ describe('shop discovery', () => {
     session.completeByHand(1);
     expect(session.state.upgrades.discovered.betterKeyboard).toBe(true);
     expect(session.state.scenario.revealed.shop).toBe(false);
-    expect(visibleUpgrades(session.state)).toEqual([]);
+    expect(visibleUpgrades(session.state, testRules)).toEqual([]);
     expect(buy(session, 'betterKeyboard')).toBe(false);
   });
 
@@ -51,14 +52,14 @@ describe('shop discovery', () => {
     const session = new TestSession(1).completeScriptedTasks();
     expect(buy(session, 'betterKeyboard')).toBe(true);
     expect(session.state.economy.credits).toBe(60);
-    expect(visibleUpgrades(session.state)).toEqual(['betterKeyboard', 'aiDeveloper', 'autoAssign']);
+    expect(visibleUpgrades(session.state, testRules)).toEqual(['betterKeyboard', 'aiDeveloper', 'autoAssign']);
     expect(session.state.upgrades.discovered.autoAssign).toBe(true);
   });
 
   it('opens visibility at half the base price, not the purchase at half price', () => {
     const session = shopWithCredits(90);
-    expect(visibleUpgrades(session.state)).toContain('autoAssign');
-    expect(canBuyUpgrade(session.state, 'autoAssign')).toBe(false);
+    expect(visibleUpgrades(session.state, testRules)).toContain('autoAssign');
+    expect(canBuyUpgrade(session.state, testRules, 'autoAssign')).toBe(false);
     expect(buy(session, 'autoAssign')).toBe(false);
   });
 });
@@ -73,16 +74,16 @@ describe('buying', () => {
 
   it('charges the current price and raises ClickPower with Better Keyboard', () => {
     const session = new TestSession(1).completeScriptedTasks();
-    expect(clickPower(session.state)).toBe(1);
+    expect(clickPower(session.state, testRules)).toBe(1);
     expect(buy(session, 'betterKeyboard')).toBe(true);
     expect(session.events.at(-1)).toEqual({ type: 'upgradePurchased', upgrade: 'betterKeyboard', cost: 30 });
     expect(upgradeLevel(session.state, 'betterKeyboard')).toBe(1);
-    expect(clickPower(session.state)).toBe(2);
-    expect(currentUpgradeCost(session.state, 'betterKeyboard')).toBe(48);
+    expect(clickPower(session.state, testRules)).toBe(2);
+    expect(currentUpgradeCost(session.state, testRules, 'betterKeyboard')).toBe(48);
     expect(buy(session, 'betterKeyboard')).toBe(true);
     expect(session.state.economy.credits).toBe(90 - 30 - 48);
-    expect(clickPower(session.state)).toBe(3);
-    expect(currentUpgradeCost(session.state, 'betterKeyboard')).toBe(77);
+    expect(clickPower(session.state, testRules)).toBe(3);
+    expect(currentUpgradeCost(session.state, testRules, 'betterKeyboard')).toBe(77);
     expect(buy(session, 'betterKeyboard')).toBe(false);
   });
 
@@ -99,7 +100,7 @@ describe('buying', () => {
     const session = shopWithCredits(500);
     expect(buy(session, 'autoAssign')).toBe(true);
     expect(session.state.upgrades.owned.autoAssign).toBe(true);
-    expect(visibleUpgrades(session.state)).toContain('autoAssign');
+    expect(visibleUpgrades(session.state, testRules)).toContain('autoAssign');
     expect(buy(session, 'autoAssign')).toBe(false);
     expect(session.state.economy.credits).toBe(320);
   });
@@ -107,15 +108,15 @@ describe('buying', () => {
   it('shows the AI upgrades after AI Developer only where their threshold was reached', () => {
     const session = shopWithCredits(230);
     expect(session.state.upgrades.discovered.parallelProcessing).toBe(false);
-    expect(visibleUpgrades(session.state)).toEqual(['betterKeyboard', 'aiDeveloper', 'autoAssign', 'autoSubmit', 'autoComplete']);
+    expect(visibleUpgrades(session.state, testRules)).toEqual(['betterKeyboard', 'aiDeveloper', 'autoAssign', 'autoSubmit', 'autoComplete']);
     expect(buy(session, 'aiDeveloper')).toBe(true);
-    expect(visibleUpgrades(session.state)).toEqual([
+    expect(visibleUpgrades(session.state, testRules)).toEqual([
       'betterKeyboard', 'aiDeveloper', 'autoAssign', 'autoSubmit', 'autoComplete', 'aiWorkPower', 'aiTickSpeed',
     ]);
   });
 
   it('rejects unknown purchases before the shop exists', () => {
     const state = new TestSession(1).state;
-    expect(applyCommand(state, { type: 'buyUpgrade', upgrade: 'betterKeyboard' }).accepted).toBe(false);
+    expect(applyCommand(state, testRules, { type: 'buyUpgrade', upgrade: 'betterKeyboard' }).accepted).toBe(false);
   });
 });

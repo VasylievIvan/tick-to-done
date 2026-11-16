@@ -31,7 +31,7 @@ const dictionaryMessage = 'Visible text must come from the i18n dictionary by ke
 const markupChild = ':matches(JSXElement, JSXFragment) > JSXExpressionContainer';
 
 export default defineConfig([
-  globalIgnores(['dist', 'coverage', 'playwright-report', 'test-results']),
+  globalIgnores(['dist', 'dist-e2e', 'coverage', 'playwright-report', 'test-results']),
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
   {
@@ -77,7 +77,10 @@ export default defineConfig([
           paths: ['react', 'react-dom', 'zustand', 'i18next', 'react-i18next', '@dnd-kit/core', '@dnd-kit/sortable'].map(
             (name) => ({ name, message: 'The core does not depend on UI, store or localization libraries.' }),
           ),
-          patterns: layerImport(['ui', 'app', 'i18n', 'dev'], 'Layers depend one way: ui -> app -> core.'),
+          patterns: [
+            ...layerImport(['ui', 'app', 'i18n', 'dev'], 'Layers depend one way: ui -> app -> core.'),
+            ...layerImport(['config'], 'The core receives its rules as an argument and never reads the balance itself.'),
+          ],
         },
       ],
       'no-restricted-globals': ['error', ...browserAndClockGlobals],
@@ -97,11 +100,29 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/config/**/*.ts', 'src/i18n/**/*.ts'],
+    files: ['src/ui/**/*.ts', 'src/ui/**/*.tsx'],
     rules: {
       'no-restricted-imports': [
         'error',
-        { patterns: layerImport(['ui', 'app', 'core', 'dev'], 'Config and dictionaries are leaf modules.') },
+        { patterns: layerImport(['config'], 'The interface gets the rules from the game store, like the state.') },
+      ],
+    },
+  },
+  {
+    files: ['src/config/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: layerImport(['ui', 'app', 'dev'], 'Config holds values of core types and nothing else.') },
+      ],
+    },
+  },
+  {
+    files: ['src/i18n/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: layerImport(['ui', 'app', 'core', 'dev'], 'Dictionaries are leaf modules.') },
       ],
     },
   },

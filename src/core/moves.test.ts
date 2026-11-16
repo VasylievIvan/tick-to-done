@@ -1,11 +1,12 @@
 import type { Draft } from 'immer';
 import { describe, expect, it } from 'vitest';
-import { balance, type OneTimeUpgradeId } from '../config/balance.ts';
+import { type OneTimeUpgradeId } from './rules.ts';
+import { testRules } from '../test/testRules.ts';
 import type { GameEvent } from './events.ts';
 import type { GameState } from './state.ts';
 import { boardWith, TestSession, type CardSetup } from './testing.ts';
 
-const MOVE_US = balance.moves.autoAssignIntervalUs;
+const MOVE_US = testRules.moves.autoAssignIntervalUs;
 
 function owning(ids: readonly OneTimeUpgradeId[], levels: Partial<GameState['upgrades']['levels']> = {}) {
   return (draft: Draft<GameState>) => {
@@ -90,10 +91,10 @@ describe('Auto Complete', () => {
   });
 
   it('keeps Done at DoneMaxCards', () => {
-    const done = Array.from({ length: balance.done.maxCards }, () => finished);
+    const done = Array.from({ length: testRules.done.maxCards }, () => finished);
     const session = new TestSession(boardWith({ review: [accepted], done }, owning(['autoComplete'])));
     session.advance(MOVE_US);
-    expect(session.state.columns.done).toHaveLength(balance.done.maxCards);
+    expect(session.state.columns.done).toHaveLength(testRules.done.maxCards);
     expect(session.state.columns.done[0]).toBe(1);
   });
 });
@@ -134,7 +135,7 @@ describe('timers', () => {
   });
 
   it('put Review results before every automation when they coincide', () => {
-    const halfway: CardSetup = { ...reviewing, review: { status: 'running', elapsedUs: balance.review.durationUs - MOVE_US } };
+    const halfway: CardSetup = { ...reviewing, review: { status: 'running', elapsedUs: testRules.review.durationUs - MOVE_US } };
     const session = new TestSession(boardWith({ review: [halfway, accepted] }, owning(['autoComplete'])));
     session.advance(MOVE_US);
     const kinds = session.events.map((event) => event.type);
@@ -160,7 +161,7 @@ describe('full automatic cycle', () => {
       expect(completedTasks).toBeGreaterThan(200);
       expect(returnedReviews).toBeGreaterThan(0);
       expect(credits).toBeGreaterThan(completedTasks * 20);
-      expect(bot.state.columns.done).toHaveLength(balance.done.maxCards);
+      expect(bot.state.columns.done).toHaveLength(testRules.done.maxCards);
       const moversSeen = new Set(bot.events.flatMap((event) => (event.type === 'cardMoved' ? [event.by] : [])));
       expect([...moversSeen].sort()).toEqual(['autoAssign', 'autoComplete', 'autoSubmit']);
     }

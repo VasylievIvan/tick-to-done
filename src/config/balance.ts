@@ -1,58 +1,18 @@
-/** A ratio kept as two integers so that rounding rules apply to exact values, not to binary fractions. */
-export interface Fraction {
-  readonly numerator: number;
-  readonly denominator: number;
-}
-
-export const MICROSECONDS_PER_SECOND = 1_000_000;
+import { MICROSECONDS_PER_SECOND, type Rules } from '../core/rules.ts';
 
 const seconds = (value: number): number => value * MICROSECONDS_PER_SECOND;
 
-export type ScriptedReviewOutcome = 'pass' | 'return';
-
-export type TaskTitleKey = 'anotherTask';
-
-export const upgradeIds = [
-  'betterKeyboard',
-  'aiDeveloper',
-  'autoAssign',
-  'autoSubmit',
-  'autoComplete',
-  'aiWorkPower',
-  'aiTickSpeed',
-  'parallelProcessing',
-] as const;
-
-export type UpgradeId = (typeof upgradeIds)[number];
-
-export type RepeatableUpgradeId = 'betterKeyboard' | 'aiWorkPower' | 'aiTickSpeed' | 'parallelProcessing';
-
-export type OneTimeUpgradeId = Exclude<UpgradeId, RepeatableUpgradeId>;
-
-export type UpgradeDefinition =
-  | {
-      readonly kind: 'repeatable';
-      readonly baseCost: number;
-      readonly costGrowth: Fraction;
-      readonly requiresAiDeveloper: boolean;
-    }
-  | {
-      readonly kind: 'oneTime';
-      readonly baseCost: number;
-      readonly requiresAiDeveloper: boolean;
-    };
-
 /** Approved starting balance of the current version (docs/v0.2/prototype.md, "Стартовая экономика Prototype v0.2"). */
-export const balance = {
+export const balance: Rules = {
   initialCredits: 0,
   rewardMultiplier: 2,
 
-  taskTitleKey: 'anotherTask' satisfies TaskTitleKey,
+  taskTitleKey: 'anotherTask',
   scenarioTasks: [
     { complexity: 10, firstReview: 'pass' },
     { complexity: 15, firstReview: 'pass' },
     { complexity: 20, firstReview: 'return' },
-  ] as const satisfies readonly { complexity: number; firstReview: ScriptedReviewOutcome }[],
+  ],
   regularTaskComplexity: { min: 10, max: 30 },
 
   spawner: {
@@ -94,32 +54,28 @@ export const balance = {
 
   upgrades: {
     betterKeyboard: {
-      kind: 'repeatable',
       baseCost: 30,
       costGrowth: { numerator: 8, denominator: 5 },
       requiresAiDeveloper: false,
     },
-    aiDeveloper: { kind: 'oneTime', baseCost: 120, requiresAiDeveloper: false },
-    autoAssign: { kind: 'oneTime', baseCost: 180, requiresAiDeveloper: false },
-    autoSubmit: { kind: 'oneTime', baseCost: 240, requiresAiDeveloper: false },
-    autoComplete: { kind: 'oneTime', baseCost: 300, requiresAiDeveloper: false },
+    aiDeveloper: { baseCost: 120, requiresAiDeveloper: false },
+    autoAssign: { baseCost: 180, requiresAiDeveloper: false },
+    autoSubmit: { baseCost: 240, requiresAiDeveloper: false },
+    autoComplete: { baseCost: 300, requiresAiDeveloper: false },
     aiWorkPower: {
-      kind: 'repeatable',
       baseCost: 180,
       costGrowth: { numerator: 17, denominator: 10 },
       requiresAiDeveloper: true,
     },
     aiTickSpeed: {
-      kind: 'repeatable',
       baseCost: 240,
       costGrowth: { numerator: 9, denominator: 5 },
       requiresAiDeveloper: true,
     },
     parallelProcessing: {
-      kind: 'repeatable',
       baseCost: 480,
       costGrowth: { numerator: 11, denominator: 5 },
       requiresAiDeveloper: true,
     },
-  } as const satisfies Record<UpgradeId, UpgradeDefinition>,
-} as const;
+  },
+};

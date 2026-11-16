@@ -3,12 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { createInitialState } from '../core/state.ts';
 import { renderGame } from '../test/renderGame.tsx';
 import { GameScreen } from './GameScreen.tsx';
+import { testRules } from '../test/testRules.ts';
 
 const REVIEW_US = 2_000_000;
 
 describe('game screen', () => {
   it('starts with only To Do, In Progress and one card, and no balance', () => {
-    const { container } = renderGame(createInitialState(1), <GameScreen />);
+    const { container } = renderGame(createInitialState(testRules, 1), <GameScreen />);
     expect(screen.getAllByRole('region').map((region) => region.getAttribute('aria-label'))).toEqual([
       'To Do',
       'In Progress',
@@ -21,7 +22,7 @@ describe('game screen', () => {
   });
 
   it('reveals Code Review, Done and the balance with the tasks-done counter at their moments', () => {
-    const { store } = renderGame(createInitialState(1), <GameScreen />);
+    const { store } = renderGame(createInitialState(testRules, 1), <GameScreen />);
     const { dispatch } = store.getState();
 
     act(() => {

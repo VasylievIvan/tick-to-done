@@ -1,11 +1,12 @@
 import type { Draft } from 'immer';
 import { describe, expect, it } from 'vitest';
-import { balance, upgradeIds } from '../config/balance.ts';
+import { upgradeIds } from './rules.ts';
+import { testRules } from '../test/testRules.ts';
 import { aiTickIntervalUs, aiWorkPower, canBuyUpgrade, parallelTasks, visibleUpgrades } from './selectors.ts';
 import type { GameState } from './state.ts';
 import { boardWith, TestSession, type CardSetup } from './testing.ts';
 
-const TICK_US = balance.ai.baseTickIntervalUs;
+const TICK_US = testRules.ai.baseTickIntervalUs;
 
 function withAi(levels: Partial<GameState['upgrades']['levels']> = {}, credits = 0) {
   return (draft: Draft<GameState>) => {
@@ -55,7 +56,7 @@ describe('AI Developer tick', () => {
   it('skips finished cards and loses power beyond the remaining work', () => {
     const almostDone: CardSetup = { complexity: 10, implementationDone: 7 };
     const session = new TestSession(boardWith({ inProgress: [finished, almostDone, fresh()] }, withAi({ aiWorkPower: 3 })));
-    expect(aiWorkPower(session.state)).toBe(10);
+    expect(aiWorkPower(session.state, testRules)).toBe(10);
     session.advance(TICK_US);
     expect(session.card(1).implementationDone).toBe(10);
     expect(session.card(2).implementationDone).toBe(10);
@@ -68,7 +69,7 @@ describe('AI Developer tick', () => {
     const session = new TestSession(
       boardWith({ inProgress: [fresh(), finished, fresh(), fresh()] }, withAi({ parallelProcessing: 1 })),
     );
-    expect(parallelTasks(session.state)).toBe(2);
+    expect(parallelTasks(session.state, testRules)).toBe(2);
     session.advance(TICK_US);
     expect([1, 3, 4].map((id) => session.card(id).implementationDone)).toEqual([4, 4, 0]);
   });
@@ -135,12 +136,12 @@ describe('AI upgrades', () => {
       draft.economy.credits = 300;
       for (const id of upgradeIds) draft.upgrades.discovered[id] = true;
     });
-    expect(visibleUpgrades(before)).not.toContain('aiWorkPower');
-    expect(visibleUpgrades(before)).not.toContain('aiTickSpeed');
-    expect(visibleUpgrades(before)).not.toContain('parallelProcessing');
+    expect(visibleUpgrades(before, testRules)).not.toContain('aiWorkPower');
+    expect(visibleUpgrades(before, testRules)).not.toContain('aiTickSpeed');
+    expect(visibleUpgrades(before, testRules)).not.toContain('parallelProcessing');
     const session = new TestSession(before);
     session.command({ type: 'buyUpgrade', upgrade: 'aiDeveloper' });
-    expect(visibleUpgrades(session.state)).toEqual(expect.arrayContaining(['aiWorkPower', 'aiTickSpeed', 'parallelProcessing']));
+    expect(visibleUpgrades(session.state, testRules)).toEqual(expect.arrayContaining(['aiWorkPower', 'aiTickSpeed', 'parallelProcessing']));
   });
 
   it('AI Work Power adds 2 per level', () => {
@@ -163,7 +164,7 @@ describe('AI upgrades', () => {
     expect(session.state.timers.aiDeveloper.elapsedUs).toBe(600_000);
     const purchase = session.command({ type: 'buyUpgrade', upgrade: 'aiTickSpeed' });
     expect(purchase).toBe(true);
-    expect(aiTickIntervalUs(session.state)).toBe(800_000);
+    expect(aiTickIntervalUs(session.state, testRules)).toBe(800_000);
     expect(session.state.timers.aiDeveloper).toEqual({ active: true, elapsedUs: 480_000 });
     expect(session.card(1).implementationDone).toBe(0);
     session.advance(320_000 - 1);
@@ -178,18 +179,18 @@ describe('AI upgrades', () => {
     const session = new TestSession(boardWith({ inProgress: [fresh(30)] }, withAi({ aiTickSpeed: 3 }, 10_000)));
     session.advance(333_333);
     session.command({ type: 'buyUpgrade', upgrade: 'aiTickSpeed' });
-    expect(aiTickIntervalUs(session.state)).toBe(409_600);
+    expect(aiTickIntervalUs(session.state, testRules)).toBe(409_600);
     expect(session.state.timers.aiDeveloper.elapsedUs).toBe(Math.floor((333_333 * 409_600) / 512_000));
   });
 
   it('reaches 0.25 s on the seventh purchase and refuses the eighth', () => {
     const session = new TestSession(boardWith({ inProgress: [fresh(30)] }, withAi({ aiTickSpeed: 6 }, 1_000_000)));
-    expect(aiTickIntervalUs(session.state)).toBe(262_144);
+    expect(aiTickIntervalUs(session.state, testRules)).toBe(262_144);
     expect(session.command({ type: 'buyUpgrade', upgrade: 'aiTickSpeed' })).toBe(true);
-    expect(aiTickIntervalUs(session.state)).toBe(250_000);
-    expect(canBuyUpgrade(session.state, 'aiTickSpeed')).toBe(false);
+    expect(aiTickIntervalUs(session.state, testRules)).toBe(250_000);
+    expect(canBuyUpgrade(session.state, testRules, 'aiTickSpeed')).toBe(false);
     expect(session.command({ type: 'buyUpgrade', upgrade: 'aiTickSpeed' })).toBe(false);
-    expect(visibleUpgrades(session.state)).toContain('aiTickSpeed');
+    expect(visibleUpgrades(session.state, testRules)).toContain('aiTickSpeed');
   });
 
   it('does not touch an idle AI timer when the speed is bought', () => {
