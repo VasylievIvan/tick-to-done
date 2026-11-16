@@ -1,11 +1,13 @@
 .screen {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .topBar {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: flex-end;
   min-height: 56px;
@@ -17,18 +19,25 @@
 .main {
   display: flex;
   flex: 1;
-  align-items: flex-start;
+  min-height: 0;
   gap: 24px;
-  padding: 24px;
+  padding: 24px 24px 16px;
 }
 
 .boardArea {
   flex: 1;
   min-width: 0;
+  min-height: 0;
+  overflow-x: auto;
 }
 
 .sidebar {
   display: grid;
   flex: 0 0 300px;
+  align-content: start;
   gap: 16px;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: auto contain;
 }

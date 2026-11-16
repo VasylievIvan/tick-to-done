@@ -69,7 +69,7 @@ test('cards, shop and balance keep their layout with five-digit complexity and l
   await expect(page.locator('article[data-card="12343"]')).toContainText('Implementation: 49,995/50,000');
   const shop = page.getByRole('region', { name: 'Shop' });
   await expect(shop.locator('li[data-upgrade="biggerTasks"]')).toContainText('40,000–120,000 → 80,000–240,000');
-  await expect(shop.locator('li[data-upgrade]')).toHaveCount(10);
+  await expect(shop.locator('li[data-upgrade]')).toHaveCount(6);
 
   expect(await overflowing(page.locator('article[data-card]'))).toEqual([]);
   expect(await overflowing(shop.locator('li[data-upgrade]'))).toEqual([]);

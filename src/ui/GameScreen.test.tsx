@@ -18,7 +18,7 @@ describe('game screen', () => {
     expect(within(screen.getByRole('region', { name: 'To Do' })).getByText('Task 0001')).toBeInTheDocument();
     expect(screen.queryByTestId('credits')).toBeNull();
     expect(screen.queryByTestId('tasks-done')).toBeNull();
-    expect(container.querySelectorAll('button')).toHaveLength(0);
+    expect(container.querySelectorAll('main button')).toHaveLength(0);
   });
 
   it('reveals Code Review, Done and the balance with the tasks-done counter at their moments', () => {

@@ -60,6 +60,8 @@ export const testRules: Rules = {
 
   discoveryThreshold: { numerator: 1, denominator: 2 },
 
+  disabledUpgrades: [],
+
   upgrades: {
     betterKeyboard: {
       baseCost: 30,

@@ -5,6 +5,7 @@ import {
   clickPowerAt,
   complexityRangeAt,
   type ComplexityRange,
+  isRepeatableUpgrade,
   isUpgradeVisible,
   parallelTasksAt,
   spawnIntervalUsAt,
@@ -25,6 +26,7 @@ export {
   isRepeatableUpgrade,
   isUpgradeExhausted,
   isUpgradeVisible,
+  taskReward,
   toDoLimitAt,
   upgradeLevel,
 } from './economy.ts';
@@ -75,6 +77,11 @@ export function timerProgress(state: GameState, rules: Rules, timer: TimerId): n
 
 export function visibleUpgrades(state: GameState, rules: Rules): UpgradeId[] {
   return upgradeIds.filter((id) => isUpgradeVisible(state, rules, id));
+}
+
+/** What the shop lists: visible upgrades, except one-time upgrades already bought. */
+export function shopUpgrades(state: GameState, rules: Rules): UpgradeId[] {
+  return visibleUpgrades(state, rules).filter((id) => isRepeatableUpgrade(id) || !state.upgrades.owned[id]);
 }
 
 export function complexityRange(state: GameState, rules: Rules): ComplexityRange {

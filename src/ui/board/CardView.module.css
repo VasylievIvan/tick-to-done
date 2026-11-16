@@ -66,6 +66,21 @@
   color: var(--color-success-text);
 }
 
+.approvedRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.reward {
+  color: var(--color-success-text);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
 .footer {
   display: flex;
   justify-content: flex-end;

@@ -57,7 +57,8 @@ describe('localization', () => {
       if (!(text.startsWith('⟦') && text.endsWith('⟧'))) strays.push(text);
     }
     expect(container.textContent).toContain('⟦');
-    expect(container.querySelectorAll('section[aria-label]').length).toBeGreaterThanOrEqual(7);
+    expect(container.querySelectorAll('section[aria-label]').length).toBeGreaterThanOrEqual(6);
+    expect(container.querySelector('footer')?.textContent).toContain('⟦');
     expect(strays).toEqual([]);
   });
 

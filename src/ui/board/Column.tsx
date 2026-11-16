@@ -1,15 +1,41 @@
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Fragment } from 'react';
+import { Fragment, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
+import { timerProgress } from '../../core/selectors.ts';
 import type { CardId, ColumnId } from '../../core/state.ts';
+import { TimerRing } from '../automation/TimerRing.tsx';
 import { useDispatch, useGame } from '../GameContext.tsx';
 import styles from './Board.module.css';
 import { CardView } from './CardView.tsx';
 import { columnDroppableId, type DropData } from './dnd.ts';
+import { ARRIVING_CARD_MS, LEAVING_CARD_MS, useCardTransitions } from './useCardTransitions.ts';
 
 export type ColumnDropState = 'idle' | 'allowed' | 'active';
+
+type MoveAutomation = 'autoAssign' | 'autoSubmit' | 'autoComplete';
+
+/** Each card move is timed in the header of the column it takes cards from. */
+const moveAutomationFrom: Partial<Record<ColumnId, MoveAutomation>> = {
+  todo: 'autoAssign',
+  inProgress: 'autoSubmit',
+  review: 'autoComplete',
+};
+
+function MoveTimer({ id }: { id: MoveAutomation }) {
+  const { t } = useTranslation();
+  const owned = useGame((game) => game.upgrades.owned[id]);
+  const progress = useGame((game, rules) => timerProgress(game, rules, id));
+  const active = useGame((game) => game.timers[id].active);
+  if (!owned) return null;
+  const label = t('automation.timer', { name: t(`shop.upgrade.${id}.name`) });
+  return (
+    <span className={styles.timer} data-automation={id}>
+      <TimerRing progress={progress} active={active} label={label} size="mini" />
+    </span>
+  );
+}
 
 interface ColumnProps {
   column: ColumnId;
@@ -45,6 +71,9 @@ function SortableTaskCard({ id, column }: { id: CardId; column: ColumnId }) {
   );
 }
 
+const leavingStyle = { animationDuration: `${String(LEAVING_CARD_MS)}ms` } satisfies CSSProperties;
+const arrivingStyle = { '--arrive-ms': `${String(ARRIVING_CARD_MS)}ms` } as CSSProperties;
+
 function StaticTaskCard({ id, column }: { id: CardId; column: ColumnId }) {
   const card = useGame((game) => game.cards[id]);
   return card ? <CardView card={card} column={column} /> : null;
@@ -56,10 +85,24 @@ export function Column({ column, cards, dropState, insertionIndex }: ColumnProps
   const { setNodeRef } = useDroppable({ id: columnDroppableId(column), data });
   const name = t(`board.column.${column}`);
   const sortable = column !== 'done';
+  const moveAutomation = moveAutomationFrom[column];
+  // Only Done animates arrivals: it is where the work of a card ends.
+  const animatesArrival = column === 'done';
+  const { leaving, arriving } = useCardTransitions(column, animatesArrival);
   const items = cards.map((id, index) => (
     <Fragment key={id}>
       {insertionIndex === index && <div className={styles.indicator} />}
-      {sortable ? <SortableTaskCard id={id} column={column} /> : <StaticTaskCard id={id} column={column} />}
+      {sortable ? (
+        <SortableTaskCard id={id} column={column} />
+      ) : animatesArrival && arriving.has(id) ? (
+        <div className={styles.arriving} style={arrivingStyle} data-arriving="true">
+          <div className={styles.arrivingCard}>
+            <StaticTaskCard id={id} column={column} />
+          </div>
+        </div>
+      ) : (
+        <StaticTaskCard id={id} column={column} />
+      )}
     </Fragment>
   ));
 
@@ -74,6 +117,7 @@ export function Column({ column, cards, dropState, insertionIndex }: ColumnProps
         <span className={styles.count} aria-label={t('board.cardCount', { count: cards.length })}>
           {cards.length.toLocaleString(i18n.language)}
         </span>
+        {moveAutomation && <MoveTimer id={moveAutomation} />}
       </header>
       <div ref={setNodeRef} className={styles.cards}>
         {sortable ? (
@@ -84,6 +128,11 @@ export function Column({ column, cards, dropState, insertionIndex }: ColumnProps
           items
         )}
         {insertionIndex === cards.length && <div className={styles.indicator} />}
+        {leaving.map((card) => (
+          <div key={card.number} className={styles.leaving} style={leavingStyle} data-leaving="true" aria-hidden="true">
+            <CardView card={card} column={column} />
+          </div>
+        ))}
       </div>
     </section>
   );

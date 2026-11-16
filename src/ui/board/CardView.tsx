@@ -1,6 +1,6 @@
 import type { PointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { isUnfinished } from '../../core/selectors.ts';
+import { isUnfinished, taskReward } from '../../core/selectors.ts';
 import type { Card, ColumnId } from '../../core/state.ts';
 import { useRules } from '../GameContext.tsx';
 import { useTaskLabel } from '../useTaskLabel.ts';
@@ -62,7 +62,12 @@ export function CardView({ card, column, onWork, draggable = false, overlay = fa
         />
       )}
       {column === 'review' && card.review.status === 'accepted' && (
-        <span className={[styles.lozenge, styles.approved].join(' ')}>{t('card.approved')}</span>
+        <div className={styles.approvedRow}>
+          <span className={[styles.lozenge, styles.approved].join(' ')}>{t('card.approved')}</span>
+          <span className={styles.reward}>
+            {t('card.reward', { value: taskReward(rules, card.originalComplexity) })}
+          </span>
+        </div>
       )}
       {column === 'inProgress' && (
         <div className={styles.footer}>

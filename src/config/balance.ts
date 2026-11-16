@@ -56,6 +56,8 @@ export const balance: Rules = {
 
   discoveryThreshold: { numerator: 1, denominator: 2 },
 
+  disabledUpgrades: ['fasterBacklog'],
+
   upgrades: {
     betterKeyboard: {
       baseCost: 30,
@@ -67,8 +69,8 @@ export const balance: Rules = {
     autoSubmit: { baseCost: 400, requiresAiDeveloper: false },
     autoComplete: { baseCost: 600, requiresAiDeveloper: false },
     aiWorkPower: {
-      baseCost: 1000,
-      costGrowth: { numerator: 13, denominator: 10 },
+      baseCost: 500,
+      costGrowth: { numerator: 23, denominator: 20 },
       requiresAiDeveloper: true,
     },
     aiTickSpeed: {

@@ -9,44 +9,50 @@ import {
   toDoLimitAt,
   upgradeEffectAt,
   upgradeLevel,
-  visibleUpgrades,
+  shopUpgrades,
 } from '../../core/selectors.ts';
 import { MICROSECONDS_PER_SECOND, type UpgradeId } from '../../core/rules.ts';
 import { useDispatch, useGame, useGameList, useRules } from '../GameContext.tsx';
 import panel from '../Panel.module.css';
 import styles from './Shop.module.css';
 
-function useEffectText(id: UpgradeId, level: number, exhausted: boolean): string {
+/** One line per stat the upgrade changes. */
+function useEffectLines(id: UpgradeId, level: number, exhausted: boolean): string[] {
   const { t } = useTranslation();
   const rules = useRules();
-  if (!isRepeatableUpgrade(id)) return t(`shop.upgrade.${id}.effect`);
+  if (!isRepeatableUpgrade(id)) return [t(`shop.upgrade.${id}.effect`)];
   if (id === 'biggerTasks') {
     const current = complexityRangeAt(rules, level);
     const next = complexityRangeAt(rules, level + 1);
-    return t('shop.upgrade.biggerTasks.effect', {
-      currentMin: current.min,
-      currentMax: current.max,
-      nextMin: next.min,
-      nextMax: next.max,
-    });
+    return [
+      t('shop.upgrade.biggerTasks.effect', {
+        currentMin: current.min,
+        currentMax: current.max,
+        nextMin: next.min,
+        nextMax: next.max,
+      }),
+    ];
   }
   const current = upgradeEffectAt(rules, id, level);
   const next = upgradeEffectAt(rules, id, level + 1);
   if (id === 'parallelProcessing') {
-    return t('shop.upgrade.parallelProcessing.effect', {
-      current,
-      next,
-      toDoCurrent: toDoLimitAt(rules, level),
-      toDoNext: toDoLimitAt(rules, level + 1),
-      boardCurrent: boardLimitAt(rules, level),
-      boardNext: boardLimitAt(rules, level + 1),
-    });
+    return [
+      t('shop.upgrade.parallelProcessing.effect', { current, next }),
+      t('shop.upgrade.parallelProcessing.effectToDoLimit', {
+        current: toDoLimitAt(rules, level),
+        next: toDoLimitAt(rules, level + 1),
+      }),
+      t('shop.upgrade.parallelProcessing.effectBoardLimit', {
+        current: boardLimitAt(rules, level),
+        next: boardLimitAt(rules, level + 1),
+      }),
+    ];
   }
   if (id === 'aiTickSpeed' || id === 'fasterBacklog') {
     const seconds = { current: current / MICROSECONDS_PER_SECOND, next: next / MICROSECONDS_PER_SECOND };
-    return exhausted ? t(`shop.upgrade.${id}.effectMaxed`, seconds) : t(`shop.upgrade.${id}.effect`, seconds);
+    return [exhausted ? t(`shop.upgrade.${id}.effectMaxed`, seconds) : t(`shop.upgrade.${id}.effect`, seconds)];
   }
-  return t(`shop.upgrade.${id}.effect`, { current, next });
+  return [t(`shop.upgrade.${id}.effect`, { current, next })];
 }
 
 function ShopItem({ id }: { id: UpgradeId }) {
@@ -57,7 +63,7 @@ function ShopItem({ id }: { id: UpgradeId }) {
   const exhausted = useGame((game, rules) => isUpgradeExhausted(game, rules, id));
   const affordable = useGame((game, rules) => canBuyUpgrade(game, rules, id));
   const repeatable = isRepeatableUpgrade(id);
-  const effect = useEffectText(id, level, exhausted);
+  const effect = useEffectLines(id, level, exhausted);
 
   return (
     <li className={styles.item} data-upgrade={id}>
@@ -67,7 +73,7 @@ function ShopItem({ id }: { id: UpgradeId }) {
       </div>
       <div className={styles.action}>
         {exhausted ? (
-          <span className={styles.lozenge}>{repeatable ? t('shop.maxed') : t('shop.purchased')}</span>
+          <span className={styles.lozenge}>{t('shop.maxed')}</span>
         ) : (
           <>
             <span className={styles.price}>{t('shop.price', { value: cost })}</span>
@@ -82,14 +88,18 @@ function ShopItem({ id }: { id: UpgradeId }) {
           </>
         )}
       </div>
-      <div className={styles.effect}>{effect}</div>
+      <div className={styles.effect}>
+        {effect.map((line) => (
+          <div key={line}>{line}</div>
+        ))}
+      </div>
     </li>
   );
 }
 
 export function Shop() {
   const { t } = useTranslation();
-  const ids = useGameList(visibleUpgrades);
+  const ids = useGameList(shopUpgrades);
   return (
     <section className={panel.panel} aria-label={t('shop.title')}>
       <h2 className={panel.title}>{t('shop.title')}</h2>

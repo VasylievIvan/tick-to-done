@@ -26,12 +26,15 @@ test('after the four one-time purchases the game runs by itself', async ({ page 
   for (const id of ['aiDeveloper', 'autoAssign', 'autoSubmit', 'autoComplete']) {
     const item = shop.locator(`li[data-upgrade="${id}"]`);
     await item.getByRole('button', { name: 'Buy' }).click();
-    await expect(item).toContainText('Purchased');
+    await expect(item).toHaveCount(0);
   }
   await expect(page.getByTestId('credits')).toHaveText('1,160 Credits');
 
   const automation = page.getByRole('region', { name: 'Automation' });
-  await expect(automation.getByRole('progressbar')).toHaveCount(4);
+  await expect(automation.getByRole('progressbar')).toHaveCount(1);
+  for (const [column, name] of [['todo', 'Auto Assign'], ['inProgress', 'Auto Submit'], ['review', 'Auto Complete']]) {
+    await expect(page.locator(`section[data-column="${column}"] header`).getByRole('progressbar', { name: `${name} timer` })).toBeVisible();
+  }
 
   const tasksDone = page.getByTestId('tasks-done');
   await expect(tasksDone).toHaveText('3 tasks done');

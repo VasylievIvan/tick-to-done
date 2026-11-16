@@ -39,7 +39,7 @@ describe('shop panel', () => {
     expect(item('Better Keyboard').getByRole('button', { name: 'Buy' })).toBeEnabled();
   });
 
-  it('marks bought one-time upgrades and the exhausted AI Tick Speed without a Buy button', () => {
+  it('drops bought one-time upgrades and marks the exhausted AI Tick Speed without a Buy button', () => {
     const base = new TestSession(1).completeScriptedTasks().state;
     const state = produce(base, (draft) => {
       for (const id of upgradeIds) draft.upgrades.discovered[id] = true;
@@ -48,12 +48,14 @@ describe('shop panel', () => {
       draft.economy.credits = 10_000;
     });
     renderGame(state, <Shop />);
-    expect(item('AI Developer').getByText('Purchased')).toBeInTheDocument();
-    expect(item('AI Developer').queryByRole('button')).toBeNull();
+    expect(screen.queryByText('AI Developer')).toBeNull();
+    expect(screen.getAllByRole('listitem').map((li) => li.getAttribute('data-upgrade'))).not.toContain('aiDeveloper');
     expect(item('AI Tick Speed').getByText('Max')).toBeInTheDocument();
     expect(item('AI Tick Speed').getByText('AI tick: 0.25 s')).toBeInTheDocument();
     expect(item('AI Tick Speed').queryByRole('button')).toBeNull();
-    expect(item('Parallel Processing').getByText('Tasks AI works on at once: 1 → 2 · To Do limit: 5 → 6 · Board limit: 10 → 12')).toBeInTheDocument();
+    expect(item('Parallel Processing').getByText('Tasks AI works on at once: 1 → 2')).toBeInTheDocument();
+    expect(item('Parallel Processing').getByText('To Do limit: 5 → 6')).toBeInTheDocument();
+    expect(item('Parallel Processing').getByText('Board limit: 10 → 12')).toBeInTheDocument();
     expect(item('Parallel Processing').getByText('480 Credits')).toBeInTheDocument();
   });
 

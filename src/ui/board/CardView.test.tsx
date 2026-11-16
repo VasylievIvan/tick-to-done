@@ -76,7 +76,8 @@ describe('card view', () => {
     expect(within(running).getByRole('progressbar', { name: 'In review' })).toHaveAttribute('aria-valuenow', '500000');
 
     const accepted = renderCard(card({ implementationDone: 10, review: { status: 'accepted' } }), 'review');
-    expect(lines(accepted)).toEqual(['Task 0001', 'Another task', 'Approved']);
+    expect(lines(accepted)).toEqual(['Task 0001', 'Another task', 'Approved+20 Credits']);
+    expect(within(accepted).getByText('+20 Credits')).toBeInTheDocument();
     expect(within(accepted).queryByRole('button')).toBeNull();
   });
 

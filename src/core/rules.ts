@@ -39,6 +39,10 @@ export type RepeatableUpgradeId = (typeof repeatableUpgradeIds)[number];
 
 export type OneTimeUpgradeId = Exclude<UpgradeId, RepeatableUpgradeId>;
 
+export const oneTimeUpgradeIds = upgradeIds.filter(
+  (id): id is OneTimeUpgradeId => !(repeatableUpgradeIds as readonly UpgradeId[]).includes(id),
+);
+
 export interface RepeatableUpgradeRules {
   readonly baseCost: number;
   readonly costGrowth: Fraction;
@@ -111,6 +115,9 @@ export interface Rules {
   readonly done: { readonly maxCards: number };
 
   readonly discoveryThreshold: Fraction;
+
+  /** Upgrades taken out of the game for now: never shown and never sold, their mechanics stay in the code. */
+  readonly disabledUpgrades: readonly UpgradeId[];
 
   readonly upgrades: { readonly [K in RepeatableUpgradeId]: RepeatableUpgradeRules } & {
     readonly [K in OneTimeUpgradeId]: OneTimeUpgradeRules;

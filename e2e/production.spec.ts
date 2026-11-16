@@ -18,7 +18,7 @@ test.describe('production build for testers', () => {
     await expect(cardIn(page, 'review', 1)).toContainText('Approved', { timeout: 3_000 });
   });
 
-  test('ships no persistent browser storage and no development hooks', async ({ page, request }) => {
+  test('ships no cookies, databases or development hooks', async ({ page, request }) => {
     await page.goto('/');
     const scripts = await page.locator('script[src]').evaluateAll((elements) =>
       elements.map((element) => element.getAttribute('src') ?? ''),
@@ -26,7 +26,7 @@ test.describe('production build for testers', () => {
     expect(scripts.length).toBeGreaterThan(0);
     for (const src of scripts) {
       const code = await (await request.get(src)).text();
-      for (const forbidden of ['localStorage', 'sessionStorage', 'indexedDB', '__vibecode', 'document.cookie']) {
+      for (const forbidden of ['sessionStorage', 'indexedDB', '__vibecode', 'document.cookie']) {
         expect(code.includes(forbidden), `${src} mentions ${forbidden}`).toBe(false);
       }
     }

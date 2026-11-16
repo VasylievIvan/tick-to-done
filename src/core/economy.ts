@@ -157,6 +157,7 @@ export function upgradeLevel(state: GameState, id: UpgradeId): number {
 /** Visible: the shop is open, the 50% threshold was ever reached, and AI upgrades also need AI Developer. */
 export function isUpgradeVisible(state: GameState, rules: Rules, id: UpgradeId): boolean {
   if (!state.scenario.revealed.shop || !state.upgrades.discovered[id]) return false;
+  if (rules.disabledUpgrades.includes(id)) return false;
   return !rules.upgrades[id].requiresAiDeveloper || state.upgrades.owned.aiDeveloper;
 }
 

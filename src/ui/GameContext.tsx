@@ -38,6 +38,10 @@ export function useHasJournal(): boolean {
   return useStore(useGameStore(), (state) => state.journal.length > 0);
 }
 
+export function useNewGame(): GameStoreState['newGame'] {
+  return useStore(useGameStore(), (state) => state.newGame);
+}
+
 export function useDispatch(): GameStoreState['dispatch'] {
   return useStore(useGameStore(), (state) => state.dispatch);
 }

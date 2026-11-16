@@ -32,6 +32,7 @@ export const en = {
     returned: 'Returned from review',
     inReview: 'In review',
     approved: 'Approved',
+    reward: '+{{value, number}} Credits',
     work: 'Work',
   },
   shop: {
@@ -39,7 +40,6 @@ export const en = {
     price: '{{value, number}} Credits',
     level: 'Level {{value, number}}',
     buy: 'Buy',
-    purchased: 'Purchased',
     maxed: 'Max',
     upgrade: {
       betterKeyboard: {
@@ -73,8 +73,9 @@ export const en = {
       },
       parallelProcessing: {
         name: 'Parallel Processing',
-        effect:
-          'Tasks AI works on at once: {{current, number}} → {{next, number}} · To Do limit: {{toDoCurrent, number}} → {{toDoNext, number}} · Board limit: {{boardCurrent, number}} → {{boardNext, number}}',
+        effect: 'Tasks AI works on at once: {{current, number}} → {{next, number}}',
+        effectToDoLimit: 'To Do limit: {{current, number}} → {{next, number}}',
+        effectBoardLimit: 'Board limit: {{current, number}} → {{next, number}}',
       },
       fasterBacklog: {
         name: 'Faster Backlog',
@@ -94,8 +95,9 @@ export const en = {
     timer: '{{name}} timer',
     working: 'Working',
     idle: 'Idle',
-    aiStats:
-      '{{power, number}} work per tick · tick {{tick, number(maximumFractionDigits: 3)}} s · {{slots, number}} at once',
+    aiPower: 'Work per tick: {{power, number}}',
+    aiTick: 'Tick: {{tick, number(maximumFractionDigits: 3)}} s',
+    aiSlots: 'Tasks at once: {{slots, number}}',
   },
   journal: {
     title: 'Activity',
@@ -114,6 +116,19 @@ export const en = {
     reviewPassed: '{{card}} passed review',
     reviewReturned_one: '{{card}} returned to {{column}} with {{count, number}} unit of rework',
     reviewReturned_other: '{{card}} returned to {{column}} with {{count, number}} units of rework',
+  },
+  footer: {
+    version: '{{name}} v{{version}}',
+    separator: '·',
+    stage: 'Prototype',
+    source: 'GitHub',
+    reset: {
+      open: 'Reset progress',
+      title: 'Reset progress?',
+      text: 'Credits, upgrades and every task on the board will be lost. The game starts over from the first task. This cannot be undone.',
+      cancel: 'Cancel',
+      confirm: 'Reset',
+    },
   },
   stats: {
     credits: '{{value, number}} Credits',

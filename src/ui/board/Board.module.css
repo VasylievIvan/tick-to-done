@@ -1,7 +1,7 @@
 .board {
   display: flex;
-  align-items: flex-start;
   gap: 12px;
+  height: 100%;
 }
 
 .column {
@@ -9,7 +9,7 @@
   flex: 0 1 var(--column-width);
   min-width: 216px;
   flex-direction: column;
-  min-height: calc(100vh - 120px);
+  min-height: 0;
   border-radius: 6px;
   background: var(--color-column);
   outline: 2px solid transparent;
@@ -27,6 +27,7 @@
 
 .header {
   display: flex;
+  flex: none;
   align-items: baseline;
   gap: 8px;
   padding: 12px 12px 8px;
@@ -41,6 +42,12 @@
   text-transform: uppercase;
 }
 
+.timer {
+  display: flex;
+  align-self: center;
+  margin-left: auto;
+}
+
 .count {
   color: var(--color-text-subtle);
   font-size: 12px;
@@ -53,7 +60,66 @@
   flex: 1;
   flex-direction: column;
   gap: 8px;
+  min-height: 0;
   padding: 4px 8px 12px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: auto contain;
+}
+
+.cards > * {
+  flex: none;
+}
+
+.leaving {
+  animation: fade-out ease-in forwards;
+  pointer-events: none;
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* The slot opens from zero height so the cards below slide down instead of jumping. */
+.arriving {
+  display: grid;
+  grid-template-rows: 1fr;
+  animation: open-slot var(--arrive-ms) ease-out;
+}
+
+.arrivingCard {
+  min-height: 0;
+  overflow: clip;
+  overflow-clip-margin: 4px;
+  animation: drop-in var(--arrive-ms) ease-out;
+}
+
+@keyframes open-slot {
+  from {
+    grid-template-rows: 0fr;
+    margin-bottom: -8px;
+  }
+}
+
+@keyframes drop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leaving {
+    opacity: 0.4;
+    animation: none;
+  }
+
+  .arriving,
+  .arrivingCard {
+    animation: none;
+  }
 }
 
 .placeholder {

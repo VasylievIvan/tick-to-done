@@ -12,7 +12,7 @@ test('AI Developer works on In Progress by itself and shows its tick', async ({ 
   const aiDeveloper = shop.locator('li[data-upgrade="aiDeveloper"]');
   await expect(aiDeveloper.getByRole('button', { name: 'Buy' })).toBeEnabled();
   await aiDeveloper.getByRole('button', { name: 'Buy' }).click();
-  await expect(aiDeveloper).toContainText('Purchased');
+  await expect(aiDeveloper).toHaveCount(0);
   await expect(shop.locator('li[data-upgrade="aiWorkPower"]')).toBeVisible();
 
   const automation = page.getByRole('region', { name: 'Automation' });

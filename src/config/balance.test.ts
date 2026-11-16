@@ -10,7 +10,8 @@ import {
   upgradeCost,
 } from '../core/economy.ts';
 import type { Rules, UpgradeId } from '../core/rules.ts';
-import { visibleUpgrades } from '../core/selectors.ts';
+import { produce } from 'immer';
+import { canBuyUpgrade, visibleUpgrades } from '../core/selectors.ts';
 import { TestSession } from '../core/testing.ts';
 import { balance } from './balance.ts';
 
@@ -59,13 +60,14 @@ const specification: Rules = {
   },
   done: { maxCards: 5 },
   discoveryThreshold: { numerator: 1, denominator: 2 },
+  disabledUpgrades: ['fasterBacklog'],
   upgrades: {
     betterKeyboard: { baseCost: 30, costGrowth: { numerator: 8, denominator: 5 }, requiresAiDeveloper: false },
     aiDeveloper: { baseCost: 1000, requiresAiDeveloper: false },
     autoAssign: { baseCost: 200, requiresAiDeveloper: false },
     autoSubmit: { baseCost: 400, requiresAiDeveloper: false },
     autoComplete: { baseCost: 600, requiresAiDeveloper: false },
-    aiWorkPower: { baseCost: 1000, costGrowth: { numerator: 13, denominator: 10 }, requiresAiDeveloper: true },
+    aiWorkPower: { baseCost: 500, costGrowth: { numerator: 23, denominator: 20 }, requiresAiDeveloper: true },
     aiTickSpeed: { baseCost: 1000, costGrowth: { numerator: 3, denominator: 2 }, requiresAiDeveloper: true },
     parallelProcessing: { baseCost: 5000, costGrowth: { numerator: 11, denominator: 5 }, requiresAiDeveloper: true },
     fasterBacklog: { baseCost: 1500, costGrowth: { numerator: 9, denominator: 5 }, requiresAiDeveloper: false },
@@ -98,8 +100,8 @@ describe('approved balance matches the specification', () => {
     expect(prices('betterKeyboard', 5)).toEqual([30, 48, 77, 123, 197]);
   });
 
-  it('prices the first five AI Work Power levels at 1000, 1300, 1690, 2197, 2857', () => {
-    expect(prices('aiWorkPower', 5)).toEqual([1000, 1300, 1690, 2197, 2857]);
+  it('prices the first five AI Work Power levels at 500, 575, 662, 761, 875', () => {
+    expect(prices('aiWorkPower', 5)).toEqual([500, 575, 662, 761, 875]);
   });
 
   it('prices the seven AI Tick Speed levels at 1000, 1500, 2250, 3375, 5063, 7594, 11 391', () => {
@@ -122,6 +124,16 @@ describe('approved balance matches the specification', () => {
       2_000_000, 1_600_000, 1_280_000, 1_024_000, 1_000_000,
     ]);
     expect([3, 4].map((level) => isFasterBacklogMaxedAt(balance, level))).toEqual([false, true]);
+  });
+
+  it('keeps Faster Backlog out of the shop even with its threshold reached', () => {
+    const session = new TestSession(1, balance).completeScriptedTasks();
+    const opened = produce(session.state, (draft) => {
+      draft.upgrades.discovered.fasterBacklog = true;
+      draft.economy.credits = 100_000;
+    });
+    expect(visibleUpgrades(opened, balance)).not.toContain('fasterBacklog');
+    expect(canBuyUpgrade(opened, balance, 'fasterBacklog')).toBe(false);
   });
 
   it('discovers Faster Backlog at a balance of 750 and Bigger Tasks at 1000', () => {

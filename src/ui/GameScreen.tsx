@@ -1,15 +1,14 @@
 import { AutomationPanel } from './automation/AutomationPanel.tsx';
 import { Board } from './board/Board.tsx';
-import { useGame, useHasJournal } from './GameContext.tsx';
+import { Footer } from './footer/Footer.tsx';
+import { useGame } from './GameContext.tsx';
 import styles from './GameScreen.module.css';
-import { JournalPanel } from './journal/JournalPanel.tsx';
 import { Shop } from './shop/Shop.tsx';
 import { StatsBar } from './stats/StatsBar.tsx';
 
 export function GameScreen() {
   const balanceRevealed = useGame((game) => game.scenario.revealed.balance);
   const shopRevealed = useGame((game) => game.scenario.revealed.shop);
-  const hasJournal = useHasJournal();
   return (
     <div className={styles.screen}>
       {balanceRevealed && (
@@ -18,17 +17,17 @@ export function GameScreen() {
         </header>
       )}
       <main className={styles.main}>
-        <div className={styles.boardArea}>
+        <div className={styles.boardArea} data-testid="board-area">
           <Board />
         </div>
-        {(shopRevealed || hasJournal) && (
-          <aside className={styles.sidebar}>
+        {shopRevealed && (
+          <aside className={styles.sidebar} data-testid="sidebar">
             <AutomationPanel />
-            {shopRevealed && <Shop />}
-            <JournalPanel />
+            <Shop />
           </aside>
         )}
       </main>
+      <Footer />
     </div>
   );
 }

@@ -9,7 +9,7 @@ test.describe('manual cycle in the browser', () => {
     // Initial screen: To Do and In Progress, one card without buttons, no balance.
     await expect(page.locator('section[data-column]')).toHaveCount(2);
     await expect(cardIn(page, 'todo', 1)).toHaveText(/Task 0001\s*Another task\s*Complexity: 10/);
-    await expect(page.locator('button')).toHaveCount(0);
+    await expect(page.locator('main button')).toHaveCount(0);
     await expect(page.getByTestId('credits')).toHaveCount(0);
 
     // Task 1: drag, Work ×10, Code Review appears, drag, review passes, Done appears, drag, balance appears.
@@ -85,15 +85,29 @@ test.describe('manual cycle in the browser', () => {
     await expect(cardIn(page, 'todo', 1)).toHaveCount(0);
   });
 
-  test('starts a new session on reload', async ({ page }) => {
+  test('keeps the progress across a reload, and a reset starts over for good', async ({ page }) => {
     await page.goto('/?seed=1');
     await dragCard(page, 1, 'todo', 'inProgress');
     await workUntilFinished(page, 1);
     await expect(column(page, 'review')).toBeVisible();
+    // Without `?seed=` the development build continues the saved game, as the production build always does.
+    await page.goto('/');
+    await expect(column(page, 'review')).toBeVisible();
+    await expect(cardIn(page, 'inProgress', 1)).toContainText('Implementation: 10/10');
+
+    await page.getByRole('button', { name: 'Reset progress' }).click();
+    const dialog = page.getByRole('alertdialog', { name: 'Reset progress?' });
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(column(page, 'review')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Reset progress' }).click();
+    await dialog.getByRole('button', { name: 'Reset' }).click();
+    await expect(page.locator('section[data-column]')).toHaveCount(2);
+    await expect(cardIn(page, 'todo', 1)).toContainText('Complexity: 10');
     await page.reload();
     await expect(page.locator('section[data-column]')).toHaveCount(2);
     await expect(cardIn(page, 'todo', 1)).toContainText('Complexity: 10');
-    await expect(page.locator('button')).toHaveCount(0);
   });
 
   test('pauses while the tab is hidden and resumes from the same point', async ({ page }) => {
