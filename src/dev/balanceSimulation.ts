@@ -7,12 +7,18 @@ import {
   isUnfinished,
   visibleUpgrades,
 } from '../core/selectors.ts';
-import type { OneTimeUpgradeId, Rules, UpgradeId } from '../core/rules.ts';
+import {
+  repeatableUpgradeIds,
+  type OneTimeUpgradeId,
+  type RepeatableUpgradeId,
+  type Rules,
+  type UpgradeId,
+} from '../core/rules.ts';
 import { columnIds, createInitialState, timerIds, type ColumnId, type GameState, type TimerId } from '../core/state.ts';
 
 /**
- * A simple model of a human: one action at a time, each taking attention time. Material for the open questions on
- * pacing; it does not decide or change the balance.
+ * A simple model of a human: one action at a time, each taking attention time. Material for the playtest questions
+ * on pacing; it does not decide or change the balance.
  */
 export interface PlayerModel {
   readonly clicksPerSecond: number;
@@ -28,8 +34,11 @@ export interface SimulationOptions {
   readonly strategy: PurchaseStrategy;
   readonly player: PlayerModel;
   readonly limitSeconds: number;
-  /** How long to keep observing after all four one-time automations are bought. */
+  /** Length of the window right after all four one-time automations are bought. */
   readonly observeSecondsAfterFullAutomation: number;
+  readonly segmentSeconds: number;
+  /** Length of the closing window over which timer idle shares are measured. */
+  readonly finalWindowSeconds: number;
 }
 
 export interface Milestone {
@@ -38,6 +47,15 @@ export interface Milestone {
   readonly drags: number;
 }
 
+export interface Segment {
+  readonly creditsPerMinute: number;
+  readonly tasksPerMinute: number;
+  readonly purchases: number;
+}
+
+/** Idle share of a timer whose upgrade was owned for the whole window; `null` when it was not. */
+export type IdleShares = Readonly<Record<TimerId, number | null>>;
+
 export interface SimulationResult {
   readonly seed: number;
   readonly strategy: PurchaseStrategy;
@@ -45,15 +63,21 @@ export interface SimulationResult {
   readonly automations: Readonly<Partial<Record<OneTimeUpgradeId, Milestone>>>;
   readonly fullAutomation: Milestone | null;
   readonly purchaseOrder: readonly UpgradeId[];
-  /** Averages over the observation window after full automation. */
+  /** Averages over the window right after full automation. */
   readonly afterFullAutomation: {
     readonly columnLoad: Readonly<Record<ColumnId, number>>;
-    readonly timerIdleShare: Readonly<Record<TimerId, number>>;
+    readonly timerIdleShare: IdleShares;
     readonly tasksPerMinute: number;
   } | null;
+  readonly segments: readonly Segment[];
+  readonly finalLevels: Readonly<Record<RepeatableUpgradeId, number>>;
+  readonly finalIdleShare: IdleShares;
+  readonly finalCredits: number;
+  readonly totalEarned: number;
 }
 
 const STEP_US = 50_000;
+const US_PER_SECOND = 1_000_000;
 const oneTimeAutomations: readonly OneTimeUpgradeId[] = ['aiDeveloper', 'autoAssign', 'autoSubmit', 'autoComplete'];
 
 function nextPurchase(state: GameState, rules: Rules, strategy: PurchaseStrategy): UpgradeId | null {
@@ -105,14 +129,43 @@ function nextClick(state: GameState): Command | null {
   return card === undefined ? null : { type: 'work', card };
 }
 
-const zeroColumns = (): Record<ColumnId, number> => ({ todo: 0, inProgress: 0, review: 0, done: 0 });
-const zeroTimers = (): Record<TimerId, number> => ({
-  aiDeveloper: 0,
-  autoAssign: 0,
-  autoSubmit: 0,
-  autoComplete: 0,
-  spawner: 0,
-});
+const timerOwner: Readonly<Record<TimerId, OneTimeUpgradeId | null>> = {
+  aiDeveloper: 'aiDeveloper',
+  autoAssign: 'autoAssign',
+  autoSubmit: 'autoSubmit',
+  autoComplete: 'autoComplete',
+  spawner: null,
+};
+
+/** Counts samples where a timer is idle, only while its upgrade is owned; a timer owned late is reported as `null`. */
+class IdleCounter {
+  private samples = 0;
+  private readonly idle: Record<TimerId, number> = { aiDeveloper: 0, autoAssign: 0, autoSubmit: 0, autoComplete: 0, spawner: 0 };
+  private readonly ownedThroughout: Record<TimerId, boolean> = {
+    aiDeveloper: true,
+    autoAssign: true,
+    autoSubmit: true,
+    autoComplete: true,
+    spawner: true,
+  };
+
+  sample(state: GameState): void {
+    this.samples += 1;
+    for (const timer of timerIds) {
+      const owner = timerOwner[timer];
+      if (owner !== null && !state.upgrades.owned[owner]) this.ownedThroughout[timer] = false;
+      if (!state.timers[timer].active) this.idle[timer] += 1;
+    }
+  }
+
+  shares(): IdleShares {
+    const entries = timerIds.map((timer) => [
+      timer,
+      this.samples > 0 && this.ownedThroughout[timer] ? this.idle[timer] / this.samples : null,
+    ]);
+    return Object.fromEntries(entries) as Record<TimerId, number | null>;
+  }
+}
 
 export function simulate(options: SimulationOptions): SimulationResult {
   const { player, rules } = options;
@@ -126,17 +179,21 @@ export function simulate(options: SimulationOptions): SimulationResult {
   const purchaseOrder: UpgradeId[] = [];
   let fullAutomation: Milestone | null = null;
   let completedAtFull = 0;
-  let samples = 0;
-  const load = zeroColumns();
-  const idle = zeroTimers();
+  let completedAtWindowEnd = 0;
+  let observedSamples = 0;
+  const load: Record<ColumnId, number> = { todo: 0, inProgress: 0, review: 0, done: 0 };
+  const idleAfterFull = new IdleCounter();
+  const idleAtEnd = new IdleCounter();
 
-  const limitUs = options.limitSeconds * 1_000_000;
-  const observeUs = options.observeSecondsAfterFullAutomation * 1_000_000;
-  const milestone = (): Milestone => ({ seconds: timeUs / 1_000_000, clicks, drags });
+  const limitUs = options.limitSeconds * US_PER_SECOND;
+  const observeUs = options.observeSecondsAfterFullAutomation * US_PER_SECOND;
+  const segmentUs = options.segmentSeconds * US_PER_SECOND;
+  const finalWindowStartUs = limitUs - options.finalWindowSeconds * US_PER_SECOND;
+  const segments: Segment[] = [];
+  let segmentStart = { earned: 0, completed: 0, purchases: 0 };
+  const milestone = (): Milestone => ({ seconds: timeUs / US_PER_SECOND, clicks, drags });
 
   while (timeUs < limitUs) {
-    if (fullAutomation && timeUs >= fullAutomation.seconds * 1_000_000 + observeUs) break;
-
     if (timeUs >= busyUntilUs) {
       const purchase = nextPurchase(state, rules, options.strategy);
       const drag = purchase === null ? nextDrag(state) : null;
@@ -150,29 +207,44 @@ export function simulate(options: SimulationOptions): SimulationResult {
           fullAutomation = milestone();
           completedAtFull = state.economy.completedTasks;
         }
-        busyUntilUs = timeUs + player.purchaseSeconds * 1_000_000;
+        busyUntilUs = timeUs + player.purchaseSeconds * US_PER_SECOND;
       } else if (drag !== null) {
         state = applyCommand(state, rules, drag).state;
         drags += 1;
-        busyUntilUs = timeUs + player.dragSeconds * 1_000_000;
+        busyUntilUs = timeUs + player.dragSeconds * US_PER_SECOND;
       } else if (click !== null) {
         state = applyCommand(state, rules, click).state;
         clicks += 1;
-        busyUntilUs = timeUs + 1_000_000 / player.clicksPerSecond;
+        busyUntilUs = timeUs + US_PER_SECOND / player.clicksPerSecond;
       }
     }
 
     state = advanceTime(state, rules, STEP_US).state;
     timeUs += STEP_US;
 
-    if (fullAutomation) {
-      samples += 1;
+    if (fullAutomation && timeUs <= fullAutomation.seconds * US_PER_SECOND + observeUs) {
+      observedSamples += 1;
       for (const column of columnIds) load[column] += state.columns[column].length;
-      for (const timer of timerIds) if (!state.timers[timer].active) idle[timer] += 1;
+      idleAfterFull.sample(state);
+      completedAtWindowEnd = state.economy.completedTasks;
+    }
+    if (timeUs > finalWindowStartUs) idleAtEnd.sample(state);
+    if (timeUs % segmentUs === 0) {
+      const minutes = segmentUs / (60 * US_PER_SECOND);
+      segments.push({
+        creditsPerMinute: (state.economy.totalEarned - segmentStart.earned) / minutes,
+        tasksPerMinute: (state.economy.completedTasks - segmentStart.completed) / minutes,
+        purchases: purchaseOrder.length - segmentStart.purchases,
+      });
+      segmentStart = {
+        earned: state.economy.totalEarned,
+        completed: state.economy.completedTasks,
+        purchases: purchaseOrder.length,
+      };
     }
   }
 
-  const observedMinutes = (samples * STEP_US) / 60_000_000;
+  const observedMinutes = (observedSamples * STEP_US) / (60 * US_PER_SECOND);
   return {
     seed: options.seed,
     strategy: options.strategy,
@@ -181,13 +253,21 @@ export function simulate(options: SimulationOptions): SimulationResult {
     fullAutomation,
     purchaseOrder,
     afterFullAutomation:
-      samples === 0
+      observedSamples === 0
         ? null
         : {
-            columnLoad: Object.fromEntries(columnIds.map((id) => [id, load[id] / samples])) as Record<ColumnId, number>,
-            timerIdleShare: Object.fromEntries(timerIds.map((id) => [id, idle[id] / samples])) as Record<TimerId, number>,
-            tasksPerMinute: (state.economy.completedTasks - completedAtFull) / observedMinutes,
+            columnLoad: Object.fromEntries(columnIds.map((id) => [id, load[id] / observedSamples])) as Record<ColumnId, number>,
+            timerIdleShare: idleAfterFull.shares(),
+            tasksPerMinute: (completedAtWindowEnd - completedAtFull) / observedMinutes,
           },
+    segments,
+    finalLevels: Object.fromEntries(repeatableUpgradeIds.map((id) => [id, state.upgrades.levels[id]])) as Record<
+      RepeatableUpgradeId,
+      number
+    >,
+    finalIdleShare: idleAtEnd.shares(),
+    finalCredits: state.economy.credits,
+    totalEarned: state.economy.totalEarned,
   };
 }
 
