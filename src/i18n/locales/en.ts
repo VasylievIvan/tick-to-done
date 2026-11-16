@@ -73,7 +73,8 @@ export const en = {
       },
       parallelProcessing: {
         name: 'Parallel Processing',
-        effect: 'Tasks AI works on at once: {{current, number}} → {{next, number}}',
+        effect:
+          'Tasks AI works on at once: {{current, number}} → {{next, number}} · To Do limit: {{toDoCurrent, number}} → {{toDoNext, number}} · Board limit: {{boardCurrent, number}} → {{boardNext, number}}',
       },
       fasterBacklog: {
         name: 'Faster Backlog',

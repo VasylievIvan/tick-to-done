@@ -1,5 +1,13 @@
 import { isImplementationComplete, isUnfinished } from './cards.ts';
-import { isAiTickSpeedMaxedAt, isFasterBacklogMaxedAt, isRepeatableUpgrade, taskReward, upgradeCost } from './economy.ts';
+import {
+  boardLimitAt,
+  isAiTickSpeedMaxedAt,
+  isFasterBacklogMaxedAt,
+  isRepeatableUpgrade,
+  taskReward,
+  toDoLimitAt,
+  upgradeCost,
+} from './economy.ts';
 import type { GameEvent } from './events.ts';
 import { activeTasksCount } from './counts.ts';
 import { upgradeIds, type Rules } from './rules.ts';
@@ -55,9 +63,10 @@ export function findInvariantViolations(state: GameState, rules: Rules): string[
     report(`credits ${state.economy.credits}`);
   }
 
-  if (activeTasksCount(state) > rules.spawner.boardLimit) report(`active tasks ${activeTasksCount(state)}`);
+  const parallelLevels = state.upgrades.levels.parallelProcessing;
+  if (activeTasksCount(state) > boardLimitAt(rules, parallelLevels)) report(`active tasks ${activeTasksCount(state)}`);
   const freshToDo = state.columns.todo.filter((id) => state.cards[id]?.returnCount === 0).length;
-  if (freshToDo > rules.spawner.toDoLimit) report(`To Do holds ${freshToDo} never-returned cards`);
+  if (freshToDo > toDoLimitAt(rules, parallelLevels)) report(`To Do holds ${freshToDo} never-returned cards`);
 
   for (const id of timerIds) {
     const timer = state.timers[id];

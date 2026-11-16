@@ -1,12 +1,14 @@
 import {
   aiTickIntervalUsAt,
   aiWorkPowerAt,
+  boardLimitAt,
   clickPowerAt,
   complexityRangeAt,
   type ComplexityRange,
   isUpgradeVisible,
   parallelTasksAt,
   spawnIntervalUsAt,
+  toDoLimitAt,
 } from './economy.ts';
 import { upgradeIds, type RepeatableUpgradeId, type Rules, type UpgradeId } from './rules.ts';
 import type { Card, GameState, TimerId } from './state.ts';
@@ -16,12 +18,14 @@ export { canMoveCard, canReorderCard, canWork, columnOf } from './board.ts';
 export { currentWorkRemaining, isUnfinished } from './cards.ts';
 export { activeTasksCount, unfinishedInProgressCount } from './counts.ts';
 export {
+  boardLimitAt,
   canBuyUpgrade,
   complexityRangeAt,
   currentUpgradeCost,
   isRepeatableUpgrade,
   isUpgradeExhausted,
   isUpgradeVisible,
+  toDoLimitAt,
   upgradeLevel,
 } from './economy.ts';
 
@@ -39,6 +43,14 @@ export function parallelTasks(state: GameState, rules: Rules): number {
 
 export function aiTickIntervalUs(state: GameState, rules: Rules): number {
   return aiTickIntervalUsAt(rules, state.upgrades.levels.aiTickSpeed);
+}
+
+export function toDoLimit(state: GameState, rules: Rules): number {
+  return toDoLimitAt(rules, state.upgrades.levels.parallelProcessing);
+}
+
+export function boardLimit(state: GameState, rules: Rules): number {
+  return boardLimitAt(rules, state.upgrades.levels.parallelProcessing);
 }
 
 export function spawnIntervalUs(state: GameState, rules: Rules): number {

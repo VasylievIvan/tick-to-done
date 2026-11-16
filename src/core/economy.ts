@@ -79,6 +79,14 @@ export function spawnIntervalUsAt(rules: Rules, fasterBacklogLevels: number): nu
   return Math.max(minIntervalUs, scaled);
 }
 
+export function toDoLimitAt(rules: Rules, parallelLevels: number): number {
+  return rules.spawner.toDoLimit + parallelLevels * rules.spawner.toDoLimitPerParallelLevel;
+}
+
+export function boardLimitAt(rules: Rules, parallelLevels: number): number {
+  return rules.spawner.boardLimit + parallelLevels * rules.spawner.boardLimitPerParallelLevel;
+}
+
 export function isFasterBacklogMaxedAt(rules: Rules, fasterBacklogLevels: number): boolean {
   return spawnIntervalUsAt(rules, fasterBacklogLevels) <= rules.spawner.minIntervalUs;
 }

@@ -53,7 +53,7 @@ describe('shop panel', () => {
     expect(item('AI Tick Speed').getByText('Max')).toBeInTheDocument();
     expect(item('AI Tick Speed').getByText('AI tick: 0.25 s')).toBeInTheDocument();
     expect(item('AI Tick Speed').queryByRole('button')).toBeNull();
-    expect(item('Parallel Processing').getByText('Tasks AI works on at once: 1 → 2')).toBeInTheDocument();
+    expect(item('Parallel Processing').getByText('Tasks AI works on at once: 1 → 2 · To Do limit: 5 → 6 · Board limit: 10 → 12')).toBeInTheDocument();
     expect(item('Parallel Processing').getByText('480 Credits')).toBeInTheDocument();
   });
 

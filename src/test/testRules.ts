@@ -24,7 +24,9 @@ export const testRules: Rules = {
     minIntervalUs: seconds(1),
     intervalUs: seconds(3),
     toDoLimit: 5,
+    toDoLimitPerParallelLevel: 1,
     boardLimit: 10,
+    boardLimitPerParallelLevel: 2,
   },
 
   clickPower: { base: 1, perKeyboardLevel: 1 },

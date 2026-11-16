@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   aiTickIntervalUsAt,
+  boardLimitAt,
   complexityRangeAt,
   isDiscoveryThresholdReached,
   isFasterBacklogMaxedAt,
   spawnIntervalUsAt,
+  toDoLimitAt,
   upgradeCost,
 } from '../core/economy.ts';
 import type { Rules, UpgradeId } from '../core/rules.ts';
@@ -35,7 +37,9 @@ const specification: Rules = {
     intervalFactorPerFasterBacklogLevel: { numerator: 4, denominator: 5 },
     minIntervalUs: s(1),
     toDoLimit: 5,
+    toDoLimitPerParallelLevel: 1,
     boardLimit: 10,
+    boardLimitPerParallelLevel: 2,
   },
   clickPower: { base: 1, perKeyboardLevel: 1 },
   ai: {
@@ -147,6 +151,15 @@ describe('approved balance matches the specification', () => {
     ];
     const rows = table.map((_, level) => complexityRangeAt(balance, level));
     expect(rows.map(({ min, max, step }) => [min, max, step])).toEqual(table);
+  });
+
+  it('grows ToDoLimit 5 + ParallelLevels and BoardLimit 10 + ParallelLevels × 2', () => {
+    expect([0, 1, 2, 3].map((level) => [toDoLimitAt(balance, level), boardLimitAt(balance, level)])).toEqual([
+      [5, 10],
+      [6, 12],
+      [7, 14],
+      [8, 16],
+    ]);
   });
 
   it('reaches the 0.25 s AI tick on the seventh AI Tick Speed purchase', () => {

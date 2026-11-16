@@ -1,10 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import {
+  boardLimitAt,
   canBuyUpgrade,
   complexityRangeAt,
   currentUpgradeCost,
   isRepeatableUpgrade,
   isUpgradeExhausted,
+  toDoLimitAt,
   upgradeEffectAt,
   upgradeLevel,
   visibleUpgrades,
@@ -30,6 +32,16 @@ function useEffectText(id: UpgradeId, level: number, exhausted: boolean): string
   }
   const current = upgradeEffectAt(rules, id, level);
   const next = upgradeEffectAt(rules, id, level + 1);
+  if (id === 'parallelProcessing') {
+    return t('shop.upgrade.parallelProcessing.effect', {
+      current,
+      next,
+      toDoCurrent: toDoLimitAt(rules, level),
+      toDoNext: toDoLimitAt(rules, level + 1),
+      boardCurrent: boardLimitAt(rules, level),
+      boardNext: boardLimitAt(rules, level + 1),
+    });
+  }
   if (id === 'aiTickSpeed' || id === 'fasterBacklog') {
     const seconds = { current: current / MICROSECONDS_PER_SECOND, next: next / MICROSECONDS_PER_SECOND };
     return exhausted ? t(`shop.upgrade.${id}.effectMaxed`, seconds) : t(`shop.upgrade.${id}.effect`, seconds);

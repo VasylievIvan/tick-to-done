@@ -77,8 +77,11 @@ export interface Rules {
     readonly intervalUs: number;
     readonly intervalFactorPerFasterBacklogLevel: Fraction;
     readonly minIntervalUs: number;
+    /** Limits before any Parallel Processing purchase; each level adds its own increment to both. */
     readonly toDoLimit: number;
+    readonly toDoLimitPerParallelLevel: number;
     readonly boardLimit: number;
+    readonly boardLimitPerParallelLevel: number;
   };
 
   readonly clickPower: { readonly base: number; readonly perKeyboardLevel: number };

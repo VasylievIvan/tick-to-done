@@ -1,6 +1,6 @@
 import type { Draft } from 'immer';
 import { activeTasksCount } from './counts.ts';
-import { complexityRangeAt } from './economy.ts';
+import { boardLimitAt, complexityRangeAt, toDoLimitAt } from './economy.ts';
 import type { CardSource, EventSink } from './events.ts';
 import { drawUint32, uniformIntInclusive } from './rng.ts';
 import type { Rules, ScriptedReviewOutcome } from './rules.ts';
@@ -27,8 +27,8 @@ export function createTask(
 export function canSpawnRegularTask(state: GameState, rules: Rules): boolean {
   return (
     state.scenario.spawnerEnabled &&
-    state.columns.todo.length < rules.spawner.toDoLimit &&
-    activeTasksCount(state) < rules.spawner.boardLimit
+    state.columns.todo.length < toDoLimitAt(rules, state.upgrades.levels.parallelProcessing) &&
+    activeTasksCount(state) < boardLimitAt(rules, state.upgrades.levels.parallelProcessing)
   );
 }
 
