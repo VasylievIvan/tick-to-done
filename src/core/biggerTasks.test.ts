@@ -162,3 +162,10 @@ describe('Bigger Tasks', () => {
     expect(session.card(3).originalComplexity).toBe(testRules.scenarioTasks[2]?.complexity);
   });
 });
+
+describe('round complexity limits', () => {
+  it('refuses a level whose bounds leave exact integers instead of rounding wrongly or looping', () => {
+    expect(() => complexityRangeAt(testRules, 60)).toThrow(RangeError);
+    expect(() => complexityRangeAt(testRules, 2000)).toThrow(RangeError);
+  });
+});

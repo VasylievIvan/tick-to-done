@@ -188,6 +188,7 @@ export function simulate(options: SimulationOptions): SimulationResult {
   const limitUs = options.limitSeconds * US_PER_SECOND;
   const observeUs = options.observeSecondsAfterFullAutomation * US_PER_SECOND;
   const segmentUs = options.segmentSeconds * US_PER_SECOND;
+  if (!Number.isInteger(segmentUs / STEP_US)) throw new RangeError(`A segment must be a whole number of ${STEP_US} µs steps`);
   const finalWindowStartUs = limitUs - options.finalWindowSeconds * US_PER_SECOND;
   const segments: Segment[] = [];
   let segmentStart = { earned: 0, completed: 0, purchases: 0 };

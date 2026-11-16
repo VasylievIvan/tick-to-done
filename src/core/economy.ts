@@ -118,6 +118,9 @@ function roundToStep(value: number, step: number): number {
 export function complexityRangeAt(rules: Rules, biggerTasksLevels: number): ComplexityRange {
   const { min, max, rangeFactorPerBiggerTasksLevel } = rules.regularTaskComplexity;
   const scale = rangeFactorPerBiggerTasksLevel ** biggerTasksLevels;
+  if (!Number.isSafeInteger(max * scale) || min * scale < 1) {
+    throw new RangeError(`Bigger Tasks level ${biggerTasksLevels} gives a range outside exact integers`);
+  }
   const step = complexityStep(min * scale);
   return { min: roundToStep(min * scale, step), max: roundToStep(max * scale, step), step };
 }
