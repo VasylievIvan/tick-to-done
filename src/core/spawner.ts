@@ -1,5 +1,6 @@
 import type { Draft } from 'immer';
 import { activeTasksCount } from './counts.ts';
+import { complexityRangeAt } from './economy.ts';
 import type { CardSource, EventSink } from './events.ts';
 import { drawUint32, uniformIntInclusive } from './rng.ts';
 import type { Rules, ScriptedReviewOutcome } from './rules.ts';
@@ -32,7 +33,8 @@ export function canSpawnRegularTask(state: GameState, rules: Rules): boolean {
 }
 
 export function spawnRegularTask(draft: Draft<GameState>, rules: Rules, events: EventSink): void {
-  const { min, max } = rules.regularTaskComplexity;
-  const complexity = uniformIntInclusive(drawUint32(draft.rng, 'generation'), min, max);
+  const { min, max, step } = complexityRangeAt(rules, draft.upgrades.levels.biggerTasks);
+  const stepsAboveMin = uniformIntInclusive(drawUint32(draft.rng, 'generation'), 0, (max - min) / step);
+  const complexity = min + stepsAboveMin * step;
   createTask(draft, rules, complexity, null, 'spawner', events);
 }

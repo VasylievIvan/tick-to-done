@@ -119,7 +119,7 @@ export function createInitialState(rules: Rules, seed: number): GameState {
     nextCardNumber: firstCard.number + 1,
     economy: { credits: rules.initialCredits, completedTasks: 0, returnedReviews: 0, totalEarned: 0 },
     upgrades: {
-      levels: { betterKeyboard: 0, aiWorkPower: 0, aiTickSpeed: 0, parallelProcessing: 0, fasterBacklog: 0 },
+      levels: { betterKeyboard: 0, aiWorkPower: 0, aiTickSpeed: 0, parallelProcessing: 0, fasterBacklog: 0, biggerTasks: 0 },
       owned: { aiDeveloper: false, autoAssign: false, autoSubmit: false, autoComplete: false },
       discovered: discoveryAt(rules, rules.initialCredits),
     },

@@ -83,6 +83,37 @@ export function isFasterBacklogMaxedAt(rules: Rules, fasterBacklogLevels: number
   return spawnIntervalUsAt(rules, fasterBacklogLevels) <= rules.spawner.minIntervalUs;
 }
 
+export interface ComplexityRange {
+  readonly min: number;
+  readonly max: number;
+  readonly step: number;
+}
+
+/** The largest of 1, 2 or 5 × 10ⁿ that does not exceed half of the lower bound, found by integer search. */
+export function complexityStep(lowerBound: number): number {
+  let step = 1;
+  for (let decade = 1; ; decade *= 10) {
+    for (const mantissa of [1, 2, 5]) {
+      const candidate = mantissa * decade;
+      if (candidate * 2 > lowerBound) return step;
+      step = candidate;
+    }
+  }
+}
+
+/** Nearest multiple of the step, halves rounded up, in integers. */
+function roundToStep(value: number, step: number): number {
+  return Math.floor((2 * value + step) / (2 * step)) * step;
+}
+
+/** The range of new regular tasks: both bounds doubled per Bigger Tasks level, then rounded to the step. */
+export function complexityRangeAt(rules: Rules, biggerTasksLevels: number): ComplexityRange {
+  const { min, max, rangeFactorPerBiggerTasksLevel } = rules.regularTaskComplexity;
+  const scale = rangeFactorPerBiggerTasksLevel ** biggerTasksLevels;
+  const step = complexityStep(min * scale);
+  return { min: roundToStep(min * scale, step), max: roundToStep(max * scale, step), step };
+}
+
 export function isDiscoveryThresholdReached(rules: Rules, credits: number, baseCost: number): boolean {
   const { numerator, denominator } = rules.discoveryThreshold;
   return credits * denominator >= baseCost * numerator;

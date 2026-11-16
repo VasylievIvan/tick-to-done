@@ -36,17 +36,14 @@ describe('regular generator', () => {
     expect(session.state.timers.spawner).toEqual({ active: true, elapsedUs: 0 });
   });
 
-  it('draws complexity as a uniform integer from 10 to 30', () => {
+  it('draws complexity uniformly among the multiples of the step 5 from 10 to 30', () => {
     const complexities = new Set<number>();
     for (let seed = 1; seed <= 40; seed += 1) {
       const session = new TestSession(seed).completeScriptedTasks();
       session.advance(SPAWN_US * toDoLimit);
       for (const id of session.state.columns.todo) complexities.add(session.card(id).originalComplexity);
     }
-    const sorted = [...complexities].sort((a, b) => a - b);
-    expect(sorted[0]).toBeGreaterThanOrEqual(10);
-    expect(sorted.at(-1)).toBeLessThanOrEqual(30);
-    expect(sorted.length).toBeGreaterThan(15);
+    expect([...complexities].sort((a, b) => a - b)).toEqual([10, 15, 20, 25, 30]);
   });
 
   it('stops and resets at ToDoLimit, then starts a full new interval once a place frees up', () => {

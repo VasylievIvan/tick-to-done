@@ -2,6 +2,8 @@ import {
   aiTickIntervalUsAt,
   aiWorkPowerAt,
   clickPowerAt,
+  complexityRangeAt,
+  type ComplexityRange,
   isUpgradeVisible,
   parallelTasksAt,
   spawnIntervalUsAt,
@@ -15,6 +17,7 @@ export { currentWorkRemaining, isUnfinished } from './cards.ts';
 export { activeTasksCount, unfinishedInProgressCount } from './counts.ts';
 export {
   canBuyUpgrade,
+  complexityRangeAt,
   currentUpgradeCost,
   isRepeatableUpgrade,
   isUpgradeExhausted,
@@ -62,8 +65,12 @@ export function visibleUpgrades(state: GameState, rules: Rules): UpgradeId[] {
   return upgradeIds.filter((id) => isUpgradeVisible(state, rules, id));
 }
 
-/** The value a repeatable upgrade changes at a given number of purchased levels. */
-export function upgradeEffectAt(rules: Rules, id: RepeatableUpgradeId, level: number): number {
+export function complexityRange(state: GameState, rules: Rules): ComplexityRange {
+  return complexityRangeAt(rules, state.upgrades.levels.biggerTasks);
+}
+
+/** The value a repeatable upgrade changes at a given number of purchased levels; Bigger Tasks changes a range. */
+export function upgradeEffectAt(rules: Rules, id: Exclude<RepeatableUpgradeId, 'biggerTasks'>, level: number): number {
   switch (id) {
     case 'betterKeyboard':
       return clickPowerAt(rules, level);

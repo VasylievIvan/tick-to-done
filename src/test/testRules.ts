@@ -17,7 +17,7 @@ export const testRules: Rules = {
     { complexity: 15, firstReview: 'pass' },
     { complexity: 20, firstReview: 'return' },
   ],
-  regularTaskComplexity: { min: 10, max: 30 },
+  regularTaskComplexity: { min: 10, max: 30, rangeFactorPerBiggerTasksLevel: 2 },
 
   spawner: {
     intervalFactorPerFasterBacklogLevel: { numerator: 4, denominator: 5 },
@@ -85,6 +85,11 @@ export const testRules: Rules = {
     },
     fasterBacklog: {
       baseCost: 1500,
+      costGrowth: { numerator: 2, denominator: 1 },
+      requiresAiDeveloper: false,
+    },
+    biggerTasks: {
+      baseCost: 2000,
       costGrowth: { numerator: 2, denominator: 1 },
       requiresAiDeveloper: false,
     },

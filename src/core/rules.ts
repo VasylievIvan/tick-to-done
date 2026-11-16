@@ -21,6 +21,7 @@ export const upgradeIds = [
   'aiTickSpeed',
   'parallelProcessing',
   'fasterBacklog',
+  'biggerTasks',
 ] as const;
 
 export type UpgradeId = (typeof upgradeIds)[number];
@@ -31,6 +32,7 @@ export const repeatableUpgradeIds = [
   'aiTickSpeed',
   'parallelProcessing',
   'fasterBacklog',
+  'biggerTasks',
 ] as const;
 
 export type RepeatableUpgradeId = (typeof repeatableUpgradeIds)[number];
@@ -63,7 +65,12 @@ export interface Rules {
 
   readonly taskTitleKey: TaskTitleKey;
   readonly scenarioTasks: readonly [ScenarioTaskRules, ...ScenarioTaskRules[]];
-  readonly regularTaskComplexity: { readonly min: number; readonly max: number };
+  /** Bounds before any Bigger Tasks purchase; each level multiplies both, then they are rounded to a step. */
+  readonly regularTaskComplexity: {
+    readonly min: number;
+    readonly max: number;
+    readonly rangeFactorPerBiggerTasksLevel: number;
+  };
 
   readonly spawner: {
     /** Interval before any Faster Backlog purchase. */

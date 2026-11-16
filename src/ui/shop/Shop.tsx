@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import {
   canBuyUpgrade,
+  complexityRangeAt,
   currentUpgradeCost,
   isRepeatableUpgrade,
   isUpgradeExhausted,
@@ -17,6 +18,16 @@ function useEffectText(id: UpgradeId, level: number, exhausted: boolean): string
   const { t } = useTranslation();
   const rules = useRules();
   if (!isRepeatableUpgrade(id)) return t(`shop.upgrade.${id}.effect`);
+  if (id === 'biggerTasks') {
+    const current = complexityRangeAt(rules, level);
+    const next = complexityRangeAt(rules, level + 1);
+    return t('shop.upgrade.biggerTasks.effect', {
+      currentMin: current.min,
+      currentMax: current.max,
+      nextMin: next.min,
+      nextMax: next.max,
+    });
+  }
   const current = upgradeEffectAt(rules, id, level);
   const next = upgradeEffectAt(rules, id, level + 1);
   if (id === 'aiTickSpeed' || id === 'fasterBacklog') {

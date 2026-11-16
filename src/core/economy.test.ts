@@ -55,6 +55,7 @@ describe('upgrade prices', () => {
         'autoComplete',
         'autoSubmit',
         'betterKeyboard',
+        'biggerTasks',
         'fasterBacklog',
         'parallelProcessing',
       ].sort(),

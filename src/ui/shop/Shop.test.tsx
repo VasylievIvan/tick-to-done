@@ -88,4 +88,26 @@ describe('shop panel', () => {
     expect(item('Faster Backlog').getByText('New task every 1 s')).toBeInTheDocument();
     expect(item('Faster Backlog').queryByRole('button')).toBeNull();
   });
+
+  it('shows the Bigger Tasks range of new tasks rounded, before and after the next level', () => {
+    const base = new TestSession(1).completeScriptedTasks().state;
+    const first = renderGame(
+      produce(base, (draft) => {
+        draft.upgrades.discovered.biggerTasks = true;
+      }),
+      <Shop />,
+    );
+    expect(item('Bigger Tasks').getByText('New task complexity: 10–30 → 20–60')).toBeInTheDocument();
+    first.unmount();
+
+    renderGame(
+      produce(base, (draft) => {
+        draft.upgrades.discovered.biggerTasks = true;
+        draft.upgrades.levels.biggerTasks = 10;
+      }),
+      <Shop />,
+    );
+    expect(item('Bigger Tasks').getByText('New task complexity: 10,000–30,000 → 20,000–60,000')).toBeInTheDocument();
+    expect(item('Bigger Tasks').getByText('Level 10')).toBeInTheDocument();
+  });
 });

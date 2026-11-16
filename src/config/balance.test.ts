@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   aiTickIntervalUsAt,
+  complexityRangeAt,
   isDiscoveryThresholdReached,
   isFasterBacklogMaxedAt,
   spawnIntervalUsAt,
@@ -28,7 +29,7 @@ const specification: Rules = {
     { complexity: 15, firstReview: 'pass' },
     { complexity: 20, firstReview: 'return' },
   ],
-  regularTaskComplexity: { min: 10, max: 50 },
+  regularTaskComplexity: { min: 10, max: 50, rangeFactorPerBiggerTasksLevel: 2 },
   spawner: {
     intervalUs: s(2),
     intervalFactorPerFasterBacklogLevel: { numerator: 4, denominator: 5 },
@@ -64,6 +65,7 @@ const specification: Rules = {
     aiTickSpeed: { baseCost: 1000, costGrowth: { numerator: 3, denominator: 2 }, requiresAiDeveloper: true },
     parallelProcessing: { baseCost: 5000, costGrowth: { numerator: 11, denominator: 5 }, requiresAiDeveloper: true },
     fasterBacklog: { baseCost: 1500, costGrowth: { numerator: 9, denominator: 5 }, requiresAiDeveloper: false },
+    biggerTasks: { baseCost: 2000, costGrowth: { numerator: 2, denominator: 1 }, requiresAiDeveloper: false },
   },
 };
 
@@ -118,9 +120,33 @@ describe('approved balance matches the specification', () => {
     expect([3, 4].map((level) => isFasterBacklogMaxedAt(balance, level))).toEqual([false, true]);
   });
 
-  it('discovers Faster Backlog at a balance of 750', () => {
-    const { baseCost } = balance.upgrades.fasterBacklog;
-    expect([749, 750].map((credits) => isDiscoveryThresholdReached(balance, credits, baseCost))).toEqual([false, true]);
+  it('discovers Faster Backlog at a balance of 750 and Bigger Tasks at 1000', () => {
+    const reached = (credits: number, id: UpgradeId) =>
+      isDiscoveryThresholdReached(balance, credits, balance.upgrades[id].baseCost);
+    expect([reached(749, 'fasterBacklog'), reached(750, 'fasterBacklog')]).toEqual([false, true]);
+    expect([reached(999, 'biggerTasks'), reached(1000, 'biggerTasks')]).toEqual([false, true]);
+  });
+
+  it('prices Bigger Tasks ×2 per level: 2000, 4000, 8000', () => {
+    expect(prices('biggerTasks', 3)).toEqual([2000, 4000, 8000]);
+  });
+
+  it('matches the Bigger Tasks level table of the specification', () => {
+    const table = [
+      [10, 50, 5],
+      [20, 100, 10],
+      [40, 200, 20],
+      [80, 400, 20],
+      [150, 800, 50],
+      [300, 1600, 100],
+      [600, 3200, 200],
+      [1500, 6500, 500],
+      [3000, 13_000, 1000],
+      [6000, 26_000, 2000],
+      [10_000, 50_000, 5000],
+    ];
+    const rows = table.map((_, level) => complexityRangeAt(balance, level));
+    expect(rows.map(({ min, max, step }) => [min, max, step])).toEqual(table);
   });
 
   it('reaches the 0.25 s AI tick on the seventh AI Tick Speed purchase', () => {

@@ -81,6 +81,11 @@ export const en = {
           'New task every {{current, number(maximumFractionDigits: 3)}} s → {{next, number(maximumFractionDigits: 3)}} s',
         effectMaxed: 'New task every {{current, number(maximumFractionDigits: 3)}} s',
       },
+      biggerTasks: {
+        name: 'Bigger Tasks',
+        effect:
+          'New task complexity: {{currentMin, number}}–{{currentMax, number}} → {{nextMin, number}}–{{nextMax, number}}',
+      },
     },
   },
   automation: {
