@@ -42,7 +42,7 @@ export type UpgradeDefinition =
       readonly requiresAiDeveloper: boolean;
     };
 
-/** Approved starting balance of Prototype v0.1 (docs/v0.1/prototype.md, "Стартовая экономика Prototype v0.1"). */
+/** Approved starting balance of the current version (docs/v0.2/prototype.md, "Стартовая экономика Prototype v0.2"). */
 export const balance = {
   initialCredits: 0,
   rewardMultiplier: 2,

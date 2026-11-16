@@ -13,7 +13,7 @@ import {
 
 const SEEDS = 60;
 const player: PlayerModel = { clicksPerSecond: 6, dragSeconds: 1.2, purchaseSeconds: 1.5 };
-const outputPath = new URL('../../../docs/v0.1/balance-simulation.md', import.meta.url);
+const outputPath = new URL('../../../docs/v0.2/balance-simulation.md', import.meta.url);
 
 function quantile(values: readonly number[], q: number): number {
   const sorted = [...values].sort((a, b) => a - b);
@@ -99,7 +99,7 @@ const sections = purchaseStrategies.map((strategy) => {
   return section(strategy, results);
 });
 
-const report = `# Балансовая симуляция Prototype v0.1
+const report = `# Балансовая симуляция Prototype v0.2
 
 Сгенерировано командой \`npm run sim\` (\`src/dev/node/run-balance-sim.ts\`). Это материал к открытым вопросам о темпе, а не проверка «прошёл / не прошёл»: по правилам проекта симуляция **не заменяет** игровое тестирование и баланс не меняет.
 
