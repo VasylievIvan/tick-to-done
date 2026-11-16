@@ -8,3 +8,4 @@ test-results/
 *.tsbuildinfo
 .claude/
 docs/
+CLAUDE.md
